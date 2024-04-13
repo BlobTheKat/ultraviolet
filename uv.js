@@ -172,7 +172,7 @@ class M{
 			y: (y*a - y*b + b*this.#e - a*this.#f)/det
 		}
 	}
-	copy(){ return new M(this.arr,this.#a,this.#b,this.#c,this.#d,this.#e,this.#f) }
+	sub(){ return new M(this.arr,this.#a,this.#b,this.#c,this.#d,this.#e,this.#f) }
 	add(fx = 0, t1=0, t2=0, t3=0, t4=0, {x:tx,y:ty,w:tw,h:th,l} = whole){
 		const j = (this.arr.i+=16)-16, cur = this.arr.cur
 		cur[j  ] = this.#a; cur[j+1] = this.#c; cur[j+2] = this.#e
@@ -379,7 +379,7 @@ class Target{
 			y: (y*a - y*b + b*this.#e - a*this.#f)/det
 		}
 	}
-	copy(){ return new Target(this.fb,this.p,this.#a,this.#b,this.#c,this.#d,this.#e,this.#f,this.#ux,this.#uy,this.#uz,this.#uw,this.#s,this.#t) }
+	sub(){ return new Target(this.fb,this.p,this.#a,this.#b,this.#c,this.#d,this.#e,this.#f,this.#ux,this.#uy,this.#uz,this.#uw,this.#s,this.#t) }
 	useShader(p=defaultProgram){ this.p = p }
 	setU(ux=0,uy=0,uz=0,uw=0){this.#ux=ux;this.#uy=uy;this.#uz=uz;this.#uw=uw}
 	setST(s=0,t=0){this.#s=s;this.#t=t}
@@ -563,7 +563,7 @@ Object.assign(NS, {
 	SET: 128,
 	FLIP: 192,
 	DITHERING: 134217728,
-	ONE: 17,
+	ONE: 17, ZERO: 0,
 	RGB_ONE: 1,
 	A_ONE: 16,
 	SRC_COLOR: 34,
@@ -609,7 +609,7 @@ Object.assign(NS, {
 	PIXELATED: 7, MIPMAPS: 8,
 	REPEAT_X: 16, REPEAT_MIRRORED_X: 32, REPEAT_Y: 64, REPEAT_MIRRORED_Y: 128
 })
-NS.Blend = (src = 17, dst = 0, combine = 17) => src|dst<<8|combine<<16
+NS.Blend = (src = 17, combine = 17, dst = 0) => src|dst<<8|combine<<16
 NS.Blend.REPLACE = 1114129
 NS.Blend.DEFAULT = 1135889
 NS.PI ??= Math.PI; NS.PI2 ??= NS.PI*2
@@ -679,7 +679,7 @@ precision mediump float;out vec4 c;void main(){c=vec4(0,0,0,1);}`)
 NS.autoCanvas = (renderFn) => {
 	const c = document.createElement('canvas')
 	document.documentElement.append(c)
-	c.style = 'position: fixed; top: 0; left: 0; border: 0; padding: 0; margin: 0'
+	c.style = 'position: fixed; top: 0; left: 0; border: 0; padding: 0; margin: 0; transform-origin: 0 0'
 	const x = NS.setTargetCanvas(c)
 	let last = -1000000
 	requestAnimationFrame(function f(){
