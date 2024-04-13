@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Ultraviolet</title>
+	<style>
+		@import url('https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@800&display=swap');
+	</style>
+	<script src="https://picfunk.art/codearea.js"></script>
+	<style>
+		*{ box-sizing: border-box; text-size-adjust: none; }
+		html{
+			background: linear-gradient(70deg, #05a -100%, #70a 100%);
+			height: 100%; display: flex; flex-direction: column;
+			padding: 16px;
+			padding-top: 158px;
+		}
+		body{
+			margin: 0;
+			border-radius: 0 0 16px 16px;
+			background: #000a;
+			color: #ddd; padding: 16px; font: 400 16px Arial;
+			line-height: 24px;
+			user-select: none;
+		}
+		h1{
+			position: absolute; top: 0; left: 0; width: 100%;
+			color: #eee; font: 900 40px 'Roboto Slab', Arial;
+			padding: 50px; margin: 0;
+			line-height: 50px;
+			background: #fff4;
+			clip-path: polygon(0 0, 100% 0, 100% 80%, 0 100%);
+		}
+		h1 > b{color:#000}
+		c{
+			font-family: Consolas, monospace;
+			padding: 0 2px; background: #fff3; border-radius: 6px;
+			user-select: all; font-weight: 700;
+		}
+		code-area{
+			font-family: Consolas, monospace;
+			border: 1px #fff8 solid;
+			padding: 4px; background: #fff3; border-radius: 6px;
+		}
+		::selection{background:#8888}
+		nav{
+			flex-wrap: wrap; gap: 1px;
+			border-radius: 16px 16px 0 0;
+			color: #ddd; font: 700 16px Arial;
+			user-select: none;
+			margin-bottom: 1px;
+			display: flex;
+			font-size: 0.9em;
+			overflow: clip;
+			flex-shrink: 0;
+		}
+		nav > div{
+			background: #000a;
+			flex: 1 1px; cursor: pointer;
+			height: 30px; line-height: 30px;
+			text-align: center;
+			-webkit-tap-highlight-color: #0000;
+		}
+		@media screen and (max-width: 470px) { nav > div{ min-width: 49%; } }
+		#selected{
+			background: #fff; color: black;
+		}
+		iframe{
+			width: 100%; border: 1px #fff8 solid; outline: none;
+			border-radius: 0 0 6px 6px; border-top: 0;
+			aspect-ratio: 1/1; max-height: 400px;
+			background: #000;
+		}
+		#sandbox{border-radius: 6px 6px 0 0}
+		::-webkit-scrollbar{width:0}
+	</style>
+</head>
+<h1><b>u</b>ltra<b>v</b>iolet</h1>
+<nav>
+	<div id="selected" node="gettingStarted">Getting started</div>
+	<div node="features">Features</div>
+	<div>Docs</div>
+	<div>Contribute</div>
+</nav>
+<div id="gettingStarted">
+	Super Epic 2D graphics library backed by <c>WebGL2</c><br><br>
+	<code-area lang="html" disabled>
+&lt;script src='https://ultraviolet.js.org/uv.min.js'>&lt;/script>
+&lt;canvas width='500' height='300' id='canvas'>&lt;/canvas>
+&lt;script>
+const ctx = setMainTarget(document.getElementById('canvas'))
+// ...
+&lt;/script>
+	</code-area><br>
+	This library exposes drawing functionalities much like OpenGL: Build meshes and draw them with GLSL shaders<br>
+	At the same time making best use of JS paradigm and APIs<br><br>
+	<code-area lang="js" id="sandbox">
+const ctx = autoCanvas(frame)
+const cat = Texture().fromSrc('./sample.png')
+
+function makeMesh(rad = 170, rot = 0){
+	const m = Mesh()
+	m.rotate(rot)
+	m.addRect(-100, -100, 200, 200)
+	m.rotate(-rot*2)
+	for(let i = 0; i &lt; 16; i++){
+		// addRect(x, y, width, height, uv, effect, tint_r, tint_g, tint_b, tint_a)
+		// Here we imagine the image to be broken into a 4x4 grid
+		// and we choose a sub-square based on i
+		m.addRect(-10, rad, 20, 20, uv(i%4/4, Math.floor(i/4)/4, .25, .25))
+		m.rotate(PI2/16)
+	}
+	return m.upload()
+}
+// Create one mesh ahead of time and pre-upload it for increased performance
+//const mesh = makeMesh().upload()
+
+let rot = 0
+function frame(width, height, dt){
+	rot += dt
+	// Draw something!
+	ctx.translate(width/2, height/2)
+	const mesh = makeMesh(160+Math.sin(rot*4)*20, rot)
+	ctx.draw(mesh, cat)
+}
+// TODO: try out shaders
+	</code-area>
+	<iframe sandbox="allow-scripts" id="sandboxi"></iframe>
+</div>
+<div id="features" hidden>
+<code-area lang="js" disabled>
+// Textures & texture arrays
+const flowerTex = Texture()
+flowerTex.from(fetch('./flower.png').then(a => a.blob()))
+
+const spriteList = Texture(16, 16, 100)
+for(let i = 0; i &lt; 100; i++)
+	spriteList.put(fetch(`./sprite${i}.png`).then(a => a.blob()), 0, 0, i)
+</code-area><br>
+	<li>Many texture formats including integer textures</li>
+	<li>Texture customization (wrap mode, filtering, mipmaps)</li>
+	<li>Render to other targets or textures</li>
+	<li>Read pixels from a target or canvas</li>
+	<li>Canvas2D-like transformations (`.translate()`, `.scale()`, `.rotate()`, ...)</li>
+	<li>GLSL Shaders</li>
+	<li>Meshes, allowing fast bulk-drawing of thousands or millions of sprites</li>
+	<li>Custom-use sprite properties (for use within shaders)</li>
+	<li>Mesh export/importing</li>
+	<li>Stencil buffer access for clipping</li>
+	<li>Customizable blend algorithms</li>
+	<li>8 textures and 6 uniforms per draw operation</li>
+</div>
+<script>
+	for(const n of document.querySelectorAll('[node]')){
+		n.node = document.getElementById(n.getAttribute('node'))
+		n.onclick = () => {selected.node.hidden=true;selected.id='';n.id='selected';n.node.hidden=false}
+	}
+	document.body.insertAdjacentElement('beforebegin', document.querySelector('nav'))
+	const syntaxes = {
+		html: [
+			[/<script/yi, 'color:#2ae', 'scripttag'],
+			[/<[\w-]+/y, 'color:#2ae', 'tag'],
+			[/<\/[\w-]+>/y, 'color: #2ae']
+		],
+		tag: [
+			'color:red',
+			[/[\w-]+=/y, null, 'prop'],
+			[/[\w-]+/y, null, 'prop'],
+			['>', 'color:#2ae', 'html']
+		],
+		scripttag: [
+			'color:red',
+			[/[\w-]+=/y, null, 'scriptprop'],
+			[/[\w-]+/y, null, 'scriptprop'],
+			['>', 'color:#2ae', 'js']
+		],
+		prop: [ [/('[^']*'|"[^"]*"|[^\s>]+)/, 'color:#ea2', 'tag'] ],
+		scriptprop: [ [/('[^']*'|"[^"]*"|[^\s>]+)/, 'color:#ea2', 'scripttag'] ],
+		js: [
+			[/(let|var|const|function|class|extends|if|while|for|else|do|switch|case|default|continue|break|return|yield|await|void|throw)(?![\w$])/y, 'color:#e52;font-weight:700'],
+			[/[\w$]+(?=\()/y, 'color:#dd8'],
+			[/\.[\w$]+(?![(\w$])/y, 'color:#bbf'],
+			[/<\/script>/y, 'color: #2ae', 'html'],
+			[/('([^']|\\.)*'|"([^"]|\\.)*")/y, 'color:#ea2'],
+			[/\d+(\.\d*)?(e[+-]?\d+)?|\.\d+(e[+-]?\d+)?|[+-]?Infinity|NaN|null|undefined/y, 'color:#ae2'],
+			[/\/\/.*|\/\*([^*]*|\*(?!\/))\*\//y, 'opacity:0.5'],
+			['`', 'color: #ea2', 'jsstring']
+		],
+		jsstring: [
+			'color: #ea2',
+			[/\$\{/y, 'color: #ea2', 'js2'],
+			['`', 'color: #ea2', 'js']
+		]
+	}
+	const lib = fetch('./uv.min.js').then(a => a.text())
+	sandbox.oncompile = src => lib.then(t => {
+		sandboxi.srcdoc = '<div id=errors style="color:red;font:700 16px monospace;white-space:pre-wrap;pointer-events:none;touch-action:none;position:absolute;bottom:8px"></div><script>"use strict";addEventListener("error",onunhandledrejection=console.warn=console.error=e=>{errors.append((e.message||e.reason||e)+"\\n");errors.childNodes.length>5&&errors.childNodes[0].remove();e.preventDefault?.()});'+t+';'+src.replace(/<\/script>/g,'<\\/script>') + '<\/script>'
+	})
+	syntaxes.js2 = [[/\}/y, 'color: #ea2', 'jsstring'], ...syntaxes.js]
+	for(const c of document.getElementsByTagName('code-area'))
+		c.setPatterns(syntaxes, c.getAttribute('lang')),c.value = c.textContent.trim()
+</script>
+</html>

@@ -1,5 +1,5 @@
 // Pull requests to clean up code are welcome
-{const NS = globalThis[new URL(document.currentScript.src).hash.slice(1)||'globalThis']??={}
+{const NS = globalThis[document.currentScript.src&&new URL(document.currentScript.src).hash.slice(1)||'globalThis']??={}
 
 /** @type {WebGL2RenderingContext} */
 let gl = null, vert
@@ -45,6 +45,7 @@ function bindt(t){
 const BITMAP_OPTS = {imageOrientation: 'flipY', premultiplyAlpha: 'none'}
 let preprocess = true
 const TEX_PROTO = class{
+	fromSrc(src,o){this.from(fetch(src,o).then(a=>a.blob()));return this}
 	from(thing, format = NS.Formats.RGBA, options = defaultOptions){
 		if(typeof thing != 'object') return
 		this.format = format
@@ -58,8 +59,8 @@ const TEX_PROTO = class{
 		const f = (~options>>1)&3
 		if(options&8) gl.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MIN_FILTER, GL.NEAREST_MIPMAP_NEAREST + f),this.mipmap=3
 		else gl.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MIN_FILTER, (f&1)+GL.NEAREST),this.mipmap=1
-		gl.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_WRAP_S, options&32?GL.MIRRORED_REPEAT:options&16?GL.CLAMP_TO_EDGE:GL.REPEAT)
-		gl.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_WRAP_T, options&128?GL.MIRRORED_REPEAT:options&64?GL.CLAMP_TO_EDGE:GL.REPEAT)
+		gl.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_WRAP_S, options&32?GL.MIRRORED_REPEAT:options&16?GL.REPEAT:GL.CLAMP_TO_EDGE)
+		gl.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_WRAP_T, options&128?GL.MIRRORED_REPEAT:options&64?GL.REPEAT:GL.CLAMP_TO_EDGE)
 		return this
 	}
 	put(thing, x=0, y=0, z=0){
@@ -78,8 +79,8 @@ const TEX_PROTO = class{
 		const f = (~options>>1)&3
 		if(options&8) gl.texParameteri(b, GL.TEXTURE_MIN_FILTER, GL.NEAREST_MIPMAP_NEAREST + f),this.mipmap&=-3
 		else gl.texParameteri(b, GL.TEXTURE_MIN_FILTER, (f&1)+GL.NEAREST),this.mipmap|=2
-		gl.texParameteri(b, GL.TEXTURE_WRAP_S, options&32?GL.MIRRORED_REPEAT:options&16?GL.CLAMP_TO_EDGE:GL.REPEAT)
-		gl.texParameteri(b, GL.TEXTURE_WRAP_T, options&128?GL.MIRRORED_REPEAT:options&64?GL.CLAMP_TO_EDGE:GL.REPEAT)
+		gl.texParameteri(b, GL.TEXTURE_WRAP_S, options&32?GL.MIRRORED_REPEAT:options&16?GL.REPEAT:GL.CLAMP_TO_EDGE)
+		gl.texParameteri(b, GL.TEXTURE_WRAP_T, options&128?GL.MIRRORED_REPEAT:options&64?GL.REPEAT:GL.CLAMP_TO_EDGE)
 		return this
 	}
 	of(width = 0, height = 0, layers = 0, format = NS.Formats.RGBA, options = defaultOptions){
@@ -93,8 +94,8 @@ const TEX_PROTO = class{
 		const f = (~options>>1)&3
 		if(options&8) gl.texParameteri(b, GL.TEXTURE_MIN_FILTER, GL.NEAREST_MIPMAP_NEAREST + f),this.mipmap=3
 		else gl.texParameteri(b, GL.TEXTURE_MIN_FILTER, (f&1)+GL.NEAREST),this.mipmap=1
-		gl.texParameteri(b, GL.TEXTURE_WRAP_S, options&32?GL.MIRRORED_REPEAT:options&16?GL.CLAMP_TO_EDGE:GL.REPEAT)
-		gl.texParameteri(b, GL.TEXTURE_WRAP_T, options&128?GL.MIRRORED_REPEAT:options&64?GL.CLAMP_TO_EDGE:GL.REPEAT)
+		gl.texParameteri(b, GL.TEXTURE_WRAP_S, options&32?GL.MIRRORED_REPEAT:options&16?GL.REPEAT:GL.CLAMP_TO_EDGE)
+		gl.texParameteri(b, GL.TEXTURE_WRAP_T, options&128?GL.MIRRORED_REPEAT:options&64?GL.REPEAT:GL.CLAMP_TO_EDGE)
 		return this
 	}
 	putData(sx=0, sy=0, sw, sh, data, format=this.format){
@@ -113,15 +114,15 @@ const TEX_PROTO = class{
 	delete(){ gl.deleteTexture(this) }
 }.prototype
 const fpool = []
-NS.CommandBuffer = () => {
+NS.Mesh = () => {
 	const a = []
 	a.cur = fpool.pop() ?? new Float32Array(8192)
 	a.i = 0
 	return new M(a)
 }
-NS.CommandBuffer.single = (a=whole,f=0,b=0,c=0,d=0,e=0)=>NS.CommandBuffer.singleMat(1,0,0,1,0,0,a,f,b,c,d,e)
-NS.CommandBuffer.singleRect = (b=0,c=0,d=1,e=1,a=whole,j=0,f=0,g=0,h=0,i=0)=>NS.CommandBuffer.singleMat(d,0,0,e,b,c,a,j,f,g,h,i)
-NS.CommandBuffer.singleMat = (a=0,b=0,c=0,d=0,e=0,f=0,{x:tx,y:ty,w:tw,h:th,l}=whole,fx=0,t1=0,t2=0,t3=0,t4=0) => {
+NS.Mesh.single = (a=whole,f=0,b=0,c=0,d=0,e=0)=>NS.Mesh.singleMat(1,0,0,1,0,0,a,f,b,c,d,e)
+NS.Mesh.singleRect = (b=0,c=0,d=1,e=1,a=whole,j=0,f=0,g=0,h=0,i=0)=>NS.Mesh.singleMat(d,0,0,e,b,c,a,j,f,g,h,i)
+NS.Mesh.singleMat = (a=0,b=0,c=0,d=0,e=0,f=0,{x:tx,y:ty,w:tw,h:th,l}=whole,fx=0,t1=0,t2=0,t3=0,t4=0) => {
 	const x = new Float32Array(16)
 	x[0] = a; x[1] = c; x[2] = e; x[3] = b; x[4] = d; x[5] = f
 	x[6] = tx; x[7] = ty; x[8] = tw; x[9] = th
@@ -260,7 +261,7 @@ const mat2x3 = new Float32Array(6)
 let fb = null
 let mainStencil = 0
 let pmask = 285217039
-let ux=0, uy=0, uz=0, uw=0, vx=0, vy=0, vz=0, vw=0
+let ux=0, uy=0, uz=0, uw=0, vx=0, vy=0
 let warns = -1
 let vpw = 0, vph = 0
 class Target{
@@ -467,8 +468,8 @@ class Target{
 				if((t.mipmap&3)==3) gl.generateMipmap(bindt(t)); else bindt(t)
 			}
 		}else if(textures){
-			if(this.p.tunis.length>1) return void((warns&4)&&(warns&=-5,console.warn('.draw(): Shader expects '+this.p.tunis.length+' texture(s)')))
-			if(textures==tt)return warns!=(warns&=-9)?console.warn('.draw(): Cannot use a texture that is also being drawn to'):void 0;
+			if(this.p.tunis.length>1) return warns!=(warns&=-5)?console.warn('.draw(): Shader expects '+this.p.tunis.length+' texture(s)'):void 0
+			if(textures==tt)return warns!=(warns&=-9)?console.warn('.draw(): Cannot use a texture that is also being drawn to'):void 0
 			if(textures.unit > -1){
 				gl.uniform1i(curProgram.tunis[0], textures.unit)
 				if((textures.mipmap&3)==3){
@@ -492,6 +493,7 @@ class Target{
 			gl.bufferData(GL.ARRAY_BUFFER, buf, GL.STREAM_DRAW)
 			gl.drawArraysInstanced(GL.TRIANGLE_STRIP, 0, 4, Math.min(count, buf.byteLength/64))
 		}else{
+			if(!buf.arr.cur)return warns!=(warns&=-65)?console.warn('.draw(): Mesh has already been consumed. Use .upload() if you want to draw the mesh more than once'):void 0
 			gl.bufferData(GL.ARRAY_BUFFER, buf.arr.length*32768+buf.arr.i*4, GL.STREAM_DRAW)
 			for(let i = 0; i < buf.arr.length; i++)
 				gl.bufferSubData(GL.ARRAY_BUFFER, i*32768, buf.arr[i])
@@ -530,10 +532,10 @@ layout(location=0) in mat2x3 m;
 layout(location=2) in vec4 _uv;
 layout(location=3) in vec4 _tint;
 layout(location=4) in vec2 values;
-out vec3 uv; out vec2 pos; flat out float effect; flat out vec4 tint;
+out vec3 uv; out vec2 pos,xy; flat out float effect; flat out vec4 tint;
 void main(){
 	pos = vec2(gl_VertexID&1, gl_VertexID>>1);
-	gl_Position = vec4(vec3(vec3(pos,1.)*m,1.)*global,0.,1.);
+	gl_Position = vec4(vec3(xy=vec3(pos,1.)*m,1.)*global,0.,1.);
 	uv = vec3(_uv.xy + pos*_uv.zw, values.x); tint = _tint; effect = values.y;
 }`)
 	gl.compileShader(vert)
@@ -548,7 +550,7 @@ void main(){
 	fb = bvo = null
 	mainStencil = 0
 	pmask = 285217039
-	ux=0, uy=0, uz=0, uw=0, vx=0, vy=0, vz=0, vw=0
+	ux=0, uy=0, uz=0, uw=0, vx=0, vy=0
 	return new Target(null, defaultProgram)
 }
 Object.assign(NS, {
@@ -605,12 +607,12 @@ Object.assign(NS, {
 
 	UPSCALE_PIXELATED: 1, DOWNSCALE_PIXELATED: 2, DOWNSCALE_MIPMAP_NEAREST: 4,
 	PIXELATED: 7, MIPMAPS: 8,
-	CLAMP_X: 16, REPEAT_MIRRORED_X: 32, CLAMP_Y: 64, REPEAT_MIRRORED_Y: 128
+	REPEAT_X: 16, REPEAT_MIRRORED_X: 32, REPEAT_Y: 64, REPEAT_MIRRORED_Y: 128
 })
 NS.Blend = (src = 17, dst = 0, combine = 17) => src|dst<<8|combine<<16
 NS.Blend.REPLACE = 1114129
 NS.Blend.DEFAULT = 1135889
-NS.PI ??= Math.PI
+NS.PI ??= Math.PI; NS.PI2 ??= NS.PI*2
 NS.colorSpace = space => {gl.drawingBufferColorSpace = space}
 
 NS.Target = (w = 0, h = 0, format = NS.Formats.RGBA, stencil = true) => {
@@ -648,7 +650,7 @@ NS.Shader = src => {
 	gl.shaderSource(frag, `#version 300 es
 precision mediump float; precision highp int; precision highp usampler2D;
 precision mediump sampler2DArray; precision highp usampler2DArray;
-in vec3 uv; in vec2 pos; flat in float effect; flat in vec4 tint; out vec4 color;
+in vec3 uv; in vec2 pos,xy; flat in float effect; flat in vec4 tint; out vec4 color;
 uniform sampler2D tex0, tex1, tex2, tex3, tex4, tex5, tex6, tex7;
 uniform usampler2D utex0, utex1, utex2, utex3, utex4, utex5, utex6, utex7;
 uniform sampler2DArray atex0, atex1, atex2, atex3, atex4, atex5, atex6, atex7;
@@ -673,4 +675,19 @@ precision mediump float;out vec4 c;void main(){c=vec4(0,0,0,1);}`)
 	p.tunis = Array.from({length:8},(_,i) => gl.getUniformLocation(p,'tex'+i) || gl.getUniformLocation(p,'utex'+i) || gl.getUniformLocation(p,'atex'+i) || gl.getUniformLocation(p,'uatex'+i))
 	while(p.tunis.length&&!p.tunis[p.tunis.length-1]) p.tunis.pop()
 	return p
+}
+NS.autoCanvas = (renderFn) => {
+	const c = document.createElement('canvas')
+	document.documentElement.append(c)
+	c.style = 'position: fixed; top: 0; left: 0; border: 0; padding: 0; margin: 0'
+	const x = NS.setTargetCanvas(c)
+	let last = -1000000
+	requestAnimationFrame(function f(){
+		requestAnimationFrame(f)
+		x.resize(Math.round(visualViewport.width * visualViewport.scale * devicePixelRatio), Math.round(visualViewport.height * visualViewport.scale * devicePixelRatio))
+		c.style.transform = 'scale('+1/devicePixelRatio+')'
+		x.reset(devicePixelRatio/x.width,0,0,devicePixelRatio/x.height,0,0)
+		renderFn(x.width/devicePixelRatio, x.height/devicePixelRatio, -.001*Math.max(-500, last-(last=performance.now())))
+	})
+	return x
 }}
