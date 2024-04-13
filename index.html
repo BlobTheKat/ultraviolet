@@ -12,7 +12,7 @@
 		*{ box-sizing: border-box; text-size-adjust: none; }
 		html{
 			background: linear-gradient(70deg, #05a -100%, #70a 100%);
-			height: 100%; display: flex; flex-direction: column;
+			min-height: 100%; display: flex; flex-direction: column;
 			padding: 16px;
 			padding-top: 158px;
 		}
@@ -72,16 +72,17 @@
 			aspect-ratio: 1/1; max-height: 400px;
 			background: #000;
 		}
-		#sandbox{ border-radius: 6px 6px 0 0; max-height: 500px; overflow: auto; }
+		#sandbox{ border-radius: 6px 6px 0 0; max-height: 525px; overflow: auto; }
 		::-webkit-scrollbar{width:0}
+		li{margin:.5em 0}
 	</style>
 </head>
 <h1><b>u</b>ltra<b>v</b>iolet</h1>
 <nav>
 	<div id="selected" node="gettingStarted">Getting started</div>
 	<div node="features">Features</div>
-	<div>Docs</div>
-	<div>Contribute</div>
+	<div node="docs">Docs</div>
+	<div onclick="window.open('https://github.com/BlobTheKat/ultraviolet','_blank')">Contribute</div>
 </nav>
 <div id="gettingStarted">
 	Super Epic 2D graphics library backed by <c>WebGL2</c><br><br>
@@ -96,38 +97,41 @@ const ctx = setMainTarget(document.getElementById('canvas'))
 	This library exposes drawing functionalities much like OpenGL: Build meshes and draw them with GLSL shaders<br>
 	At the same time making best use of JS paradigm and APIs<br><br>
 	<code-area lang="js" id="sandbox">
-const ctx = autoCanvas(frame)
+// autoCanvas() is a convenience function to replace setMainTarget()
+// Make sure to call it before anything else
+const ctx = autoCanvas(everyFrame)
+
 const cat = Texture().fromSrc('./sample.png')
 
-function makeMesh(rad = 170, rot = 0){
-	const m = Mesh()
-	m.rotate(rot)
-	m.addRect(-100, -100, 200, 200)
-	m.rotate(-rot*2)
-	for(let i = 0; i &lt; 16; i++){
-		// addRect(x, y, width, height, uv, effect, tint_r, tint_g, tint_b, tint_a)
-		// Here we imagine the image to be broken into a 4x4 grid
-		// and we choose a sub-square based on i
-		const rot2 = PI2/16, wave = Math.sin((rot2*i-rot)*5)
-		m.addRect(-10, rad + wave*15, 20, 20, uv(i%4/4, Math.floor(i/4)/4, .25, .25))
-		m.rotate(rot2)
-	}
-	return m.upload()
-}
-// Create one mesh ahead of time and pre-upload it for increased performance
-// const mesh = makeMesh().upload()
-
 let rot = 0
-function frame(width, height, dt){
+function everyFrame(width, height, dt){
 	rot += dt
-	// Draw something!
+	// Edit me!
 	ctx.translate(width/2, height/2)
-	const mesh = makeMesh(160 + Math.sin(rot*4)*10, rot)
+	const mesh = makeCatpheus(160 + Math.sin(rot*4)*10, rot)
 	ctx.draw(mesh, cat)
 	drawParticles(ctx.sub(), height, dt)
 }
 
-// Shaders!
+// You can create one mesh ahead of time and pre-upload it for increased performance
+// const mesh = makeCatpheus().upload()
+function makeCatpheus(rad = 170, rot = 0){
+	const msh = Mesh()
+	msh.rotate(rot)
+	msh.addRect(-100, -100, 200, 200)
+	msh.rotate(-rot*2)
+	for(let i = 0; i &lt; 16; i++){
+		const wave = Math.sin((PI2*(i/16) - rot)*5)*15
+		// addRect(x, y, width, height, uv, effect, tint_r, tint_g, tint_b, tint_a)
+		// Here we imagine the image to be broken into a 4x4 grid
+		// and we choose a sub-square based on i
+		msh.addRect(-10, rad + wave, 20, 20, uv(i%4/4, Math.floor(i/4)/4, .25, .25))
+		msh.rotate(PI2/16)
+	}
+	return msh.upload()
+}
+
+// Shaders! The particles change color as they fall
 const particleShader = Shader(`void main(){
 	color = texture(tex0, uv.xy);
 	float x = abs(effect-.5);
@@ -158,8 +162,8 @@ function drawParticles(subCtx, h, dt){
 	<iframe sandbox="allow-scripts" id="sandboxi"></iframe>
 </div>
 <div id="features" hidden>
+<li>Textures & texture arrays:</li>
 <code-area lang="js" disabled>
-// Textures & texture arrays
 const flowerTex = Texture()
 flowerTex.from(fetch('./flower.png').then(a => a.blob()))
 
@@ -167,23 +171,122 @@ const spriteList = Texture(16, 16, 100)
 for(let i = 0; i &lt; 100; i++)
 	spriteList.put(fetch(`./sprite${i}.png`).then(a => a.blob()), 0, 0, i)
 </code-area><br>
-	<li>Many texture formats including integer textures</li>
-	<li>Texture customization (wrap mode, filtering, mipmaps)</li>
-	<li>Render to other targets or textures</li>
-	<li>Read pixels from a target or canvas</li>
-	<li>Canvas2D-like transformations (`.translate()`, `.scale()`, `.rotate()`, ...)</li>
-	<li>GLSL Shaders</li>
-	<li>Meshes, allowing fast bulk-drawing of thousands or millions of sprites</li>
-	<li>Custom-use sprite properties (for use within shaders)</li>
-	<li>Mesh export/importing</li>
-	<li>Stencil buffer access for clipping</li>
-	<li>Customizable blend algorithms</li>
-	<li>8 textures and 6 uniforms per draw operation</li>
+<li>Many texture formats including integer textures:</li>
+<code-area lang="js" disabled>
+const flowerTex = Texture()
+flowerTex.fromSrc('./flower.png', Formats.RGBA4)
+flowerTex.fromSrc('./flower.png', Formats.RGBA565)
+flowerTex.fromSrc('./flower.png', Formats.RG16F)
+flowerTex.fromSrc('./flower.png', Formats.R32)
+</code-area><br>
+<li>Texture customization (wrap mode, filtering, mipmaps):</li>
+<code-area lang="js" disabled>
+flowerTex.fromSrc('./flower.png', _, PIXELATED | REPEAT)
+flowerTex.options(REPEAT_X | REPEAT_MIRRORED_Y | MIPMAPS | UPSCALE_PIXELATED)
+</code-area><br>
+<li>Draw to other targets or textures:</li>
+<code-area lang="js" disabled>
+const toFlower = Target(flowerTex)
+toFlower.draw(...)
+ctx.draw(..., [flowerTex]) // Will render updated texture
+</code-area><br>
+<li>Read pixels from a target or canvas:</li>
+<code-area lang="js" disabled>
+function colorPicker(x, y){
+	const [r, g, b, a] = ctx.getData(x, y, 1, 1)
+	return {r, g, b, a}
+}
+</code-area><br>
+<li>Canvas2D-like transformations (`.translate()`, `.scale()`, `.rotate()`, ...):</li>
+<code-area lang="js" disabled>
+ctx.translate(ctx.width/2, ctx.height/2)
+ctx.rotate(PI/2)
+ctx.scale(2)
+ctx.draw(...)
+</code-area><br>
+<li>GLSL Shaders:</li>
+<code-area lang="js" disabled>
+const sh = Shader(`void main(){
+	color = texture(tex0, uv.xy);
+	if(color.a &lt; .5) discard;
+}`)
+ctx.useShader(sh)
+</code-area><br>
+<li>Meshes, allowing fast bulk-drawing of thousands or millions of sprites:</li>
+<code-area lang="js" disabled>
+function makeMesh(){
+	const msh = Mesh()
+	msh.scale(10)
+	msh.addRect(...)
+	msh.addRect(...)
+	for(let i = 0; i &lt; 1_000_000; i++) msh.addRect(...)
+	return msh.upload()
+}
+const bigMesh = makeMesh()
+function everyFrame(){
+	ctx.draw(bigMesh, flowerTex)
+}
+</code-area><br>
+<li>Custom-use sprite properties (for use within shaders):</li>
+<code-area lang="js" disabled>
+const sh = Shader(`void main(){
+	// tint is one such custom-use property
+	color = texture(tex0, uv.xy) * tint;
+}`)
+ctx.useShader(sh)
+const msh = Mesh()
+const tint = [1, 0, 0, 1]
+msh.addRect(0, 0, 100, 100, _, _, tint[0], tint[1], tint[2], tint[3])
+...
+
+ctx.draw(msh, flowerTex)
+</code-area><br>
+<li>Mesh export/importing:</li>
+<code-area lang="js" disabled>
+// Let's send the mesh to a web worker to do some processing in parallel
+const f32arr = msh.export()
+worker.postMessage(f32arr)
+worker.onmessage = ({data}) => {
+	const msh = Mesh()
+	msh.import(data)
+	// Work is done, let's draw!
+}
+</code-area><br>
+<li>Stencil buffer access for clipping:</li>
+<code-area lang="js" disabled>
+ctx.draw(clipShape, _, DONT_DRAW | SET_ONE)
+// New mesh will only be drawn where it would intersect with clipShape
+ctx.draw(mesh, _, RGBA | IF_ZERO)
+</code-area><br>
+<li>Customizable blend algorithms:</li>
+<code-area lang="js" disabled>
+// dst = src*(1-dst.a) + dst*1
+const additiveBlendBehind = Blend(ONE_MINUS_DST_ALPHA, ADD, ONE)
+ctx.draw(mesh, flowerTex, RGBA, additiveBlendBehind)
+// or a prebuilt one
+ctx.draw(mesh, flowerTex, RGBA, Blend.REPLACE)
+</code-area><br>
+<li>8 textures and 6 uniforms per draw operation:</li>
+<code-area lang="js" disabled>
+ctx.setU(1, 2, 3, 4) // accessible as `uniform vec4 u;` in shader
+ctx.setST(5, 6) // accessible as `uniform float s, t;` in shader
+
+// Textures available as tex0,tex1,...,tex7 in shader
+// Access integer textures with utex0...utex7 & array textures with atex0...atex7
+// If your shader uses a specific type make sure to pass the correct one in .draw()!
+ctx.draw(mesh, [tex0, tex1, tex2, tex3, tex4, tex5, tex6, tex7])
+</code-area><br>
+Thank you for coming to my TED talk.
+</div>
+<div id="docs">
+Coming soon!
 </div>
 <script>
 	for(const n of document.querySelectorAll('[node]')){
-		n.node = document.getElementById(n.getAttribute('node'))
-		n.onclick = () => {selected.node.hidden=true;selected.id='';n.id='selected';n.node.hidden=false}
+		const id = n.getAttribute('node')
+		n.node = document.getElementById(id)
+		n.onclick = () => {selected.node.hidden=true;selected.id='';n.id='selected';n.node.hidden=false;history.replaceState({},'','#'+id)}
+		if(id == location.hash.slice(1)) n.onclick()
 	}
 	document.body.insertAdjacentElement('beforebegin', document.querySelector('nav'))
 	const syntaxes = {
@@ -212,9 +315,9 @@ for(let i = 0; i &lt; 100; i++)
 			[/\.[\w$]+(?![(\w$])/y, 'color:#bbf'],
 			[/<\/script>/y, 'color: #2ae', 'html'],
 			[/('([^']|\\.)*'|"([^"]|\\.)*")/y, 'color:#ea2'],
-			[/\d+(\.\d*)?(e[+-]?\d+)?|\.\d+(e[+-]?\d+)?|[+-]?Infinity|NaN|null|undefined/y, 'color:#ae2'],
+			[/\d[\d_]*(\.[_\d]*)?(e[+-]?[\d_]+)?|\.\d+(e[+-]?[\d_]+)?|[+-]?Infinity|NaN|null|undefined/y, 'color:#ae2'],
 			[/[\w$]+(?![(\w$])/y, 'color:#ccc'],
-			[/\/\/.*|\/\*([^*]*|\*(?!\/))\*\//y, 'opacity:0.5'],
+			[/\/\/.*|\/\*([^*]*|\*(?!\/))\*\/|\.\.\.(?=\s*[)}\],;\n]|\s*$)/y, 'opacity:.3'],
 			['`', 'color: #ea2', 'jsstring']
 		],
 		jsstring: [

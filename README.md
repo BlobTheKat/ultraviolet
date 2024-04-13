@@ -3,8 +3,8 @@
 Fast lightweight 2D graphics library powered by `webgl2`
 
 Why use ultraviolet?
-1. **Custom GLSL shader**
-2. **Lightweight (21KiB)**
+1. **Custom GLSL shaders**
+2. **Lightweight (21KiB, 7.2KiB compressed)**
 3. **Fast bulk-drawing**
 4. **Make use of GPU features such as stencil buffer, texture formats, VAOs, ...**
 
