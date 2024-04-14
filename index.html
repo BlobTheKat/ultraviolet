@@ -57,8 +57,9 @@
 		#docs > h2{ margin: 0; font-family: Consolas, monospace; cursor: pointer; text-decoration: underline; }
 		#docs > h2:not(#docsselected){ opacity: .5; font-size: 16px }
 		code-area{
-			font-family: Consolas, monospace;
-			padding: 4px; background: #fff3; border-radius: 6px;
+			font-family: Consolas, monospace; font-weight: 700;
+			padding: 8px; background: #fff3; border-radius: 6px;
+			line-height: 1.5;
 		}
 		::selection{background:#8888}
 		nav{
@@ -498,7 +499,7 @@ Thank you for coming to my TED talk.
 			[/('([^']|\\.)*'|"([^"]|\\.)*")/y, 'color:#ea2'],
 			[/\d[\d_]*(\.[_\d]*)?(e[+-]?[\d_]+)?|\.\d+(e[+-]?[\d_]+)?|[+-]?Infinity|NaN|null|undefined/y, 'color:#ae2'],
 			[/[\w$]+(?![(\w$])/y, 'color:#ccc'],
-			[/\/\/.*|\/\*([^*]*|\*(?!\/))\*\/|\.\.\.(?=\s*[)}\],;\n]|\s*$)/y, 'opacity:.3'],
+			[/\/\/.*|\/\*([^*]*|\*(?!\/))\*\/|\.\.\.(?=\s*[)}\],;\n]|\s*$)/y, 'opacity:.3;font-weight:normal'],
 			['`', 'color: #ea2', 'jsstring']
 		],
 		jsstring: [
