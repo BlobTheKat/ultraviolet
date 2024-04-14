@@ -566,20 +566,20 @@ Object.assign(NS, {
 	ONE: 17, ZERO: 0,
 	RGB_ONE: 1,
 	A_ONE: 16,
-	SRC_COLOR: 34,
-	RGB_SRC_COLOR: 2,
-	ONE_MINUS_SRC_COLOR: 51,
-	RGB_ONE_MINUS_SRC_COLOR: 3,
+	SRC: 34,
+	RGB_SRC: 2,
+	ONE_MINUS_SRC: 51,
+	RGB_ONE_MINUS_SRC: 3,
 	SRC_ALPHA: 68,
 	RGB_SRC_ALPHA: 4,
 	A_SRC: 64,
 	ONE_MINUS_SRC_ALPHA: 85,
 	RGB_ONE_MINUS_SRC_ALPHA: 5,
 	A_ONE_MINUS_SRC: 80,
-	DST_COLOR: 136,
-	RGB_DST_COLOR: 8,
-	ONE_MINUS_DST_COLOR: 153,
-	RGB_ONE_MINUS_DST_COLOR: 9,
+	DST: 136,
+	RGB_DST: 8,
+	ONE_MINUS_DST: 153,
+	RGB_ONE_MINUS_DST: 9,
 	DST_ALPHA: 102,
 	RGB_DST_ALPHA: 6,
 	A_DST: 96,
@@ -594,7 +594,7 @@ Object.assign(NS, {
 	A_ADD: 16,
 	SUBTRACT: 85,
 	RGB_SUBTRACT: 5,
-	SUBTRACT: 80,
+	A_SUBTRACT: 80,
 	REVERSE_SUBTRACT: 102,
 	RGB_REVERSE_SUBTRACT: 6,
 	A_REVERSE_SUBTRACT: 96,
@@ -687,7 +687,7 @@ NS.autoCanvas = (renderFn) => {
 		x.resize(Math.round(visualViewport.width * visualViewport.scale * devicePixelRatio), Math.round(visualViewport.height * visualViewport.scale * devicePixelRatio))
 		c.style.transform = 'scale('+1/devicePixelRatio+')'
 		x.reset(devicePixelRatio/x.width,0,0,devicePixelRatio/x.height,0,0)
-		renderFn(x.width/devicePixelRatio, x.height/devicePixelRatio, -.001*Math.max(-500, last-(last=performance.now())))
+		renderFn(x.width/devicePixelRatio, x.height/devicePixelRatio, -.001*Math.max(-1e3, last-(last=performance.now())))
 	})
 	return x
 }}

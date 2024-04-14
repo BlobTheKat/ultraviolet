@@ -38,9 +38,25 @@
 			padding: 0 2px; background: #fff3; border-radius: 6px;
 			user-select: all; font-weight: 700;
 		}
+		k{
+			font-family: Consolas, monospace;
+			padding: 0 2px; background: #fff3; border-radius: 6px; padding: 4px;
+			font-weight: 700;
+			display: block;
+			margin-top: 8px;
+		}
+		k t{ color: #c4f }
+		k n{ color: #e52 }
+		k m{ color: #dd8 }
+		k d{ color: #bbf }
+		hr{ border: none; height: 2px; background: #fff5; margin: 1em 0 }
+		[refto]{ text-decoration: underline; cursor: pointer }
+		#docs{ padding-top: 16px }
+		#docs > div{ display: none }
+		#docs > h2{ margin: 0; font-family: Consolas, monospace; cursor: pointer; text-decoration: underline; }
+		#docs > h2:not(#docsselected){ opacity: .5; font-size: 16px }
 		code-area{
 			font-family: Consolas, monospace;
-			border: 1px #fff8 solid;
 			padding: 4px; background: #fff3; border-radius: 6px;
 		}
 		::selection{background:#8888}
@@ -67,8 +83,9 @@
 			background: #fff; color: black;
 		}
 		iframe{
-			width: 100%; border: 1px #fff8 solid; outline: none;
-			border-radius: 0 0 6px 6px; border-top: 0;
+			width: 100%; outline: none;
+			border: none; border-top: 1px #fff8 solid;
+			border-radius: 0 0 6px 6px;
 			aspect-ratio: 1/1; max-height: 400px;
 			background: #000;
 		}
@@ -90,14 +107,14 @@
 &lt;script src='https://ultraviolet.js.org/uv.min.js'>&lt;/script>
 &lt;canvas width='500' height='300' id='canvas'>&lt;/canvas>
 &lt;script>
-const ctx = setMainTarget(document.getElementById('canvas'))
+const ctx = setTargetCanvas(document.getElementById('canvas'))
 // ...
 &lt;/script>
 	</code-area><br>
 	This library exposes drawing functionalities much like OpenGL: Build meshes and draw them with GLSL shaders<br>
 	At the same time making best use of JS paradigm and APIs<br><br>
 	<code-area lang="js" id="sandbox">
-// autoCanvas() is a convenience function to replace setMainTarget()
+// autoCanvas() is a convenience function to replace setTargetCanvas()
 // Make sure to call it before anything else
 const ctx = autoCanvas(everyFrame)
 
@@ -162,6 +179,7 @@ function drawParticles(subCtx, h, dt){
 	<iframe sandbox="allow-scripts" id="sandboxi"></iframe>
 </div>
 <div id="features" hidden>
+
 <li>Textures & texture arrays:</li>
 <code-area lang="js" disabled>
 const flowerTex = Texture()
@@ -277,11 +295,173 @@ ctx.setST(5, 6) // accessible as `uniform float s, t;` in shader
 ctx.draw(mesh, [tex0, tex1, tex2, tex3, tex4, tex5, tex6, tex7])
 </code-area><br>
 Thank you for coming to my TED talk.
+
 </div>
-<div id="docs">
-Coming soon!
+<div id="docs" hidden>
+	<h2 refto="exports">Module exports</h2>
+	<h2 refto="constants">Constants</h2>
+	<h2 refto="texture">Texture (wip)</h2>
+	<h2 refto="uv">UV</h2>
+	<h2 refto="mesh">Mesh (wip)</h2>
+	<h2 refto="target">Target (wip)</h2>
+	<h2 refto="transformable">Transformable (wip)</h2>
+	<h2 refto="shader">Shader (wip)</h2>
+	<h2 refto="blend">Blend (wip)</h2>
+	<hr>
+	<div id="exports">
+		Sets the canvas to initialise the drawing context from.<br>
+		You must call this or <c>autoCanvas()</c> before making use of any other function or method
+		<k><m>setTargetCanvas</m>(canvas: <t>HTMLCanvasElement</t>) -> <t refto="target">Target</t></k>
+		<hr>
+		Creates a new canvas and appends it to the body.<br>
+		Automatically resizes the canvas to fit the screen and transforms it to CSS-pixel space for you<br>
+		Will call the function <c>renderFn</c> every frame, with the canvas's width/height in CSS-pixel units, as well as the seconds passed since the last frame in <c>dt</c><br>
+		You must call this or <c>setTargetCanvas()</c> before making use of any other function or method
+		<k><m>autoCanvas</m>(renderFn: (width: <t>number</t>, height: <t>number</t>, dt: <t>number</t>) => <t>void</t>) -> <t refto="target">Target</t></k>
+		<hr>
+		Construct a new uninitialised texture object. See <b refto="texture">its section</b> for more information.
+		<k><m>Texture</m>(width?: <t>int</t>, height?: <t>int</t>, layers?: <t>int</t>, format?: <n>valueof</n> <t refto="constants">Formats</t>, options?: <t refto="texture">TextureOptions</t>) -> <t refto="texture">Texture</t></k>
+		<hr>
+		Construct a new mesh. See <b refto="mesh">its section</b> for more information.
+		<k><m>Mesh</m>() -> <t refto="mesh">Mesh</t></k>
+		<hr>
+		Construct a new target from a size or texture. See <b refto="target">its section</b> for more information.
+		<k><m>Target</m>(width?: <t>int</t>, height?: <t>int</t>, format?: <n>valueof</n> <t refto="constants">Formats</t>, stencil?: <t>boolean</t>) -> <t refto="target">Target</t><br>
+		<m>Target</m>(texture: <t refto="texture">Texture</t>, layer?: <t>int</t>, stencil?: <t>boolean</t>) -> <t refto="target">Target</t></k>
+		<hr>
+		Construct a new shader from GLSL source code. See <b refto="shaders">its section</b> for more information.
+		<k><m>Shader</m>(glslSource: <t>string</t>) -> <t refto="shaders">Shader</t></k>
+		<hr>
+		Represent a uv (A uv is a location within a texture, think a crop rectangle for a texture). See <b refto="uv">its section</b> for more information.
+		<k><m>uv</m>(x?: <t>number</t>, y?: <t>number</t>, w?: <t>number</t>, h?: <t>number</t>, layer?: <t>number</t>) -> <t refto="uv">UV</t></k>
+		<hr>
+		Create a blend function. See <b refto="blend">its section</b> for more information.
+		<k><m>Blend</m>(srcMult: <t refto="blend">BlendMultiplier</t>, combineOp: <t refto="blend">BlendCombine</t>, dstMult: <t refto="blend">BlendMultiplier</t>) -> <t refto="blend">Blend</t></k>
+		<hr>
+		Change the output canvas's color space. <c>display-p3</c> allows slightly more vibrant colors than <c>srgb</c>, while sacrificing equally in color precision
+		<k><m>colorSpace</m>(space: <t style="color:#ea2">'srgb'</t> | <t style="color:#ea2">'display-p3'</t>)</k>
+		<hr>
+		<k><d>_</d> = <t>undefined</t><br><d>PI</d> = <d style="color:#ae2">3.141592653589793</d><br><d>PI2</d> = PI*<d style="color:#ae2">2</d></k><br>
+		More constants are exposed as module exports, see the <b refto="constants">constants section</b>
+	</div>
+	<div id="constants">
+		<k><d>_</d> = <t>undefined</t><br><d>PI</d> = <d style="color:#ae2">3.141592653589793</d><br><d>PI2</d> = PI*<d style="color:#ae2">2</d></k>
+		<k><d>Formats</d> = {<br>
+			&nbsp;&nbsp;<d style="color:#ffffff4d">// Regular 8 bit formats</d><br>
+			&nbsp;&nbsp;<d>R</d>, <d>RG</d>, <d>RGB</d>, <d>RGBA</d>,<br>
+			&nbsp;&nbsp;<d style="color:#ffffff4d">// Varying bits shared between different channels<br>
+			&nbsp;&nbsp;// Upload data by packing into 8/16/32 bit ints</d><br>
+			&nbsp;&nbsp;<d>RGB565</d>, <d>RGB5_A1</d>, <d>RGB10_A2</d>,<br>
+			&nbsp;&nbsp;<d>RGBA4</d>, <d>R11F_G11F_B10F</d>, <d>RGB9_E5</d>,<br>
+			&nbsp;&nbsp;<d style="color:#ffffff4d">// Integer 8, 16 and 32 bit textures</d><br>
+			&nbsp;&nbsp;<d>R8</d>, <d>RG8</d>, <d>RGB8</d>, <d>RGBA8</d>,<br>
+			&nbsp;&nbsp;<d>R16</d>, <d>RG16</d>, <d>RGB16</d>, <d>RGBA16</d>,<br>
+			&nbsp;&nbsp;<d>R32</d>, <d>RG32</d>, <d>RGB32</d>, <d>RGBA32</d>,<br>
+			&nbsp;&nbsp;<d style="color:#ffffff4d">// half-precision float textures</d><br>
+			&nbsp;&nbsp;<d>R16F</d>, <d>RG16F</d>, <d>RGB16F</d>, <d>RGBA16F</d>,<br>
+			&nbsp;&nbsp;<d style="color:#ffffff4d">// half-precision float textures that allow you<br>
+			&nbsp;&nbsp;// to upload data with single-precision floats</d><br>
+			&nbsp;&nbsp;<d>R16F_32F</d>, <d>RG16F_32F</d>, <d>RGB16F_32F</d>, <d>RGBA16F_32F</d>,<br>
+			&nbsp;&nbsp;<d style="color:#ffffff4d">// single-precision float textures</d><br>
+			&nbsp;&nbsp;<d>R32F</d>, <d>RG32F</d>, <d>RGB32F</d>, <d>RGBA32F</d><br>
+		}</k>
+		<k>
+			<d style="color:#ffffff4d">// Constants used by third argument to (Target).draw()</d><br>
+			<d>R</d>, <d>G</d>, <d>B</d>, <d>A</d>, <d>RGB</d> = R|G|B, <d>RGBA</d> = R|G|B|A<br>
+			<d>IF_ONE</d>, <d>IF_ZERO</d>, <d>DONT_DRAW</d><br>
+			<d>UNSET</d>, <d>SET</d>, <d>FLIP</d><br>
+			<d>DITHERING</d><br><br>
+			<d style="color:#ffffff4d">// Constants used by BlendMultiplier</d><br>
+			<d>ZERO</d><br>
+			<d>RGB_ONE</d>, <d>A_ONE</d><br>
+			<d>ONE</d> = RGB_ONE|A_ONE</d><br>
+			<d>RGB_SRC</d>, <d>A_SRC</d>, <d>SRC</d> = RGB_SRC|A_SRC<br>
+			<d>RGB_ONE_MINUS_SRC</d>, <d>A_ONE_MINUS_SRC</d><br>
+			<d>ONE_MINUS_SRC</d> = RGB_ONE_MINUS_SRC|A_ONE_MINUS_SRC<br>
+			<d>RGB_SRC_ALPHA</d>, <d>SRC_ALPHA</d> = RGB_SRC_ALPHA|A_SRC<br>
+			<d>RGB_ONE_MINUS_SRC_ALPHA</d><br>
+			<d>ONE_MINUS_SRC_ALPHA</d> = RGB_ONE_MINUS_SRC_ALPHA|A_ONE_MINUS_SRC<br>
+			<d>A_DST</d>, <d>RGB_DST</d>, <d>DST</d> = RGB_DST|A_DST<br>
+			<d>RGB_ONE_MINUS_DST</d>, <d>A_ONE_MINUS_DST</d><br>
+			<d>ONE_MINUS_DST</d> = RGB_ONE_MINUS_DST|A_ONE_MINUS_DST<br>
+			<d>RGB_DST_ALPHA</d>, <d>DST_ALPHA</d> = RGB_DST_ALPHA|A_DST<br>
+			<d>RGB_ONE_MINUS_DST_ALPHA</d><br>
+			<d>ONE_MINUS_DST_ALPHA</d> = RGB_ONE_MINUS_DST_ALPHA|A_ONE_MINUS_DST<br>
+			<d>RGB_SRC_ALPHA_SATURATE,</d><br>
+			<d>SRC_ALPHA_SATURATE</d> = RGB_SRC_ALPHA_SATURATE|A_ONE<br><br>
+			<d style="color:#ffffff4d">// Constants used by BlendCombine</d><br>
+			<d>RGB_ADD</d>, <d>A_ADD</d>, <d>ADD</d> = RGB_ADD|A_ADD<br>
+			<d>RGB_SUBTRACT</d>, <d>A_SUBTRACT</d>, <d>SUBTRACT</d> = RGB_SUBTRACT|A_SUBTRACT<br>
+			<d>RGB_REVERSE_SUBTRACT</d>, <d>A_REVERSE_SUBTRACT</d><br>
+			<d>REVERSE_SUBTRACT</d> = RGB_REVERSE_SUBTRACT|A_REVERSE_SUBTRACT<br>
+			<d>RGB_MIN</d>, <d>A_MIN</d>, <d>MIN</d> = RGB_MIN|A_MIN<br>
+			<d>RGB_MAX</d>, <d>A_MAX</d>, <d>MAX</d> = RGB_MAX|A_MAX<br><br>
+			<d style="color:#ffffff4d">// Constants used by TextureOptions</d><br>
+			<d>UPSCALE_PIXELATED</d>, <d>DOWNSCALE_PIXELATED</d>, <d>DOWNSCALE_MIPMAP_NEAREST</d><br>
+			<d>PIXELATED</d> = UPSCALE_PIXELATED|DOWNSCALE_PIXELATED|DOWNSCALE_MIPMAP_NEAREST<br>
+			<d>MIPMAPS</d><br>
+			<d>REPEAT_X</d>, <d>REPEAT_Y</d>, <d>REPEAT</d> = REPEAT_X|REPEAT_Y<br>
+			<d>REPEAT_MIRRORED_X</d>, <d>REPEAT_MIRRORED_Y</d><br>
+			<d>REPEAT_MIRRORED</d> = REPEAT_MIRRORED_X|REPEAT_MIRRORED_Y
+		</k>
+	</div>
+	<div id="texture">
+		Construct a new uninitialised texture object. Do not use <c>new</c>.<br>
+		If <c>layer == 0</c>, the texture will be a flat texture, with no concept of layers. All functions that accept a layer argument will ignore that argument.<br>
+		Otherwise, the texture is a layered texture, which may hold different data on each layer.<br>
+		<c>width</c> and <c>height</c> are not guaranteed to be supported for values > <c>4096</c>. Likewise <c>layers</c> for values > <c>256</c>.<br>
+		Textures may use a lot of graphical memory. Consider reusing old textures instead of initialising new ones, and <c>.delete()</c> textures when you are done with them to avoid risks of GPU crashes
+		<k><n>constructor</n>(width?: <t>int</t>, height?: <t>int</t>, layers?: <t>int</t>, format?: <n>valueof</n> <t refto="constants">Formats</t>, options?: <t>TextureOptions</t>)</k>
+		<hr>
+		Set the default <c>options</c> parameter for all future texture initialisations
+		<k><n>static</n> .<m>defaultOptions</m>(options?: <t>TextureOptions</t>)</k>
+	</div>
+	<div id="uv">
+		<k><n>type</n> <t>UV</t> = {x: <t>number</t>, y: <t>number</t>, w: <t>number</t>, h: <t>number</t>, l: <t>number</t>}</k>
+		<hr>
+		Create a uv. Do not use <c>new</c>.<br>
+		A uv is a location within a texture, think a crop rectangle for a texture.<br>
+		Arguments default to <c>uv(0, 0, 1, 1, 0)</c>, i.e, a square from the bottom-left (0, 0) with size (1, 1) (= the whole texture) at layer 0 (the default layer for most textures)
+		<k><n>constructor</n>(x?: <t>number</t>, y?: <t>number</t>, w?: <t>number</t>, h?: <t>number</t>, layer?: <t>number</t>) -> <t>UV</t></k>
+		<hr>
+		Create a new uv as a sub-rect of another, imagining (0, 0) to be the bottom left of the reference uv and (1, 1) to be the top right
+		<k>.<m>sub</m>(x?: <t>number</t>, y?: <t>number</t>, w?: <t>number</t>, h?: <t>number</t>) -> <t>UV</t></k>
+	</div>
+	<div id="mesh">
+		Construct a new mesh. Do not use <c>new</c>.<br>
+		Unlike textures, meshes use entirely CPU memory, exactly 64 bytes per sprite they contain. That means a mesh with 1,000,000 sprites will take up approximately 64MB of CPU memory while it is being built up until it is consumed (either with <c>mesh.upload()</c> or <c>(Target).draw(mesh)</c>)
+		<k><n>constructor</n>()</k>
+		<hr>
+		These arguments are used by most of <c>Mesh</c>'s methods
+		<k><n>arguments</n> <d>SpriteParams</d> = (uv?: <t>UV</t>, effect?: <t>number</t>, r?: <t>number</t>, g?: <t>number</t>, b?: <t>number</t>, a?: <t>number</t>)</k>
+		<hr>
+		Construct a mesh consisting of a single sprite, optionally from a rectangle or 3x2 matrix.<br>This is a convenience function that is also usually more performant than its longer form
+		<k><n>static</n> .<m>single</m>(...<d>SpriteParams</d>) -> <t>Mesh</t><br>
+		<n>static</n> .<m>singleRect</m>(x: <t>number</t>, y: <t>number</t>, w: <t>number</t>, h: <t>number</t>, ...<d>SpriteParams</d>) -> <t>Mesh</t><br>
+		<n>static</n> .<m>singleMat</m>(a: <t>number</t>, b: <t>number</t>, c: <t>number</t>, d: <t>number</t>, e: <t>number</t>, f: <t>number</t>, ...<d>SpriteParams</d>) -> <t>Mesh</t></k>
+		<hr>
+	</div>
+	<div id="target"></div>
+	<div id="transformable"></div>
+	<div id="shader"></div>
+	<div id="blend"></div>
 </div>
 <script>
+	let docsCurrent = docs.children.exports, docsCurrentH2 = docs.firstElementChild
+	docsCurrent.style.display = 'block'; docsCurrentH2.id = 'docsselected'
+	for(const t of document.querySelectorAll('[refto]')){
+		const node = document.getElementById(t.getAttribute('refto'))
+		if(t.parentElement == docs) node.h2 = t
+		t.onclick = () => {
+			if(node.parentElement != docs) return node.scrollIntoView()
+			docsCurrent.style.display = ''
+			;(docsCurrent = node).style.display = 'block'
+			if(node.h2){
+				docsselected.id = ''
+				node.h2.id = 'docsselected'
+			}		
+		}
+	}
 	for(const n of document.querySelectorAll('[node]')){
 		const id = n.getAttribute('node')
 		n.node = document.getElementById(id)
