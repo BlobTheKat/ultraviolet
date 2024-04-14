@@ -496,10 +496,10 @@ Thank you for coming to my TED talk.
 			[/[\w$]+(?=\()/y, 'color:#dd8'],
 			[/\.[\w$]+(?![(\w$])/y, 'color:#bbf'],
 			[/<\/script>/y, 'color: #2ae', 'html'],
-			[/('([^']|\\.)*'|"([^"]|\\.)*")/y, 'color:#ea2'],
+			[/('([^']|\\.)*('|$)|"([^"]|\\.)*("|$))/y, 'color:#ea2'],
 			[/\d[\d_]*(\.[_\d]*)?(e[+-]?[\d_]+)?|\.\d+(e[+-]?[\d_]+)?|[+-]?Infinity|NaN|null|undefined/y, 'color:#ae2'],
 			[/[\w$]+(?![(\w$])/y, 'color:#ccc'],
-			[/\/\/.*|\/\*([^*]*|\*(?!\/))\*\/|\.\.\.(?=\s*[)}\],;\n]|\s*$)/y, 'opacity:.3;font-weight:normal'],
+			[/\/\/.*|\/\*([^*]*|\*(?!\/))(\*\/|$)|\.\.\.(?=\s*[)}\],;\n]|\s*$)/y, 'opacity:.3;font-weight:normal'],
 			['`', 'color: #ea2', 'jsstring']
 		],
 		jsstring: [
