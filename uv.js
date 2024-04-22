@@ -26,29 +26,30 @@ NS.Texture = (w=0,h=0,l=0,format=NS.Formats.RGBA,options=defaultOptions) => {
 	t.height = 0
 	t.layers = 0
 	t.format = format
-	t.mipmap = ~options>>2&2
+	t.mipmap = ~(t.options=options)>>2&2
 	if(w|h) t.of(w, h, l, format, options)
 	return t
 }
-NS.Texture.defaultOptions = o => defaultOptions = o
-const currentlyBound = [null,null,null,null,null,null,null,null]
+NS.Texture.setDefaultOptions = o => defaultOptions = o
+const currentlyBound = [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]
 let currentUnit = 0
 function bindt(t){
-	const o = currentlyBound[currentUnit]
+	const i = currentUnit|(!t.layers<<3)
+	const o = currentlyBound[i]
 	if(o) o.unit = -1
-	currentlyBound[currentUnit] = t
+	currentlyBound[i] = t
 	t.unit = currentUnit
-	const b = t.layers?GL.TEXTURE_2D_ARRAY:GL.TEXTURE_2D
+	const b = i<8?GL.TEXTURE_2D_ARRAY:GL.TEXTURE_2D
 	gl.bindTexture(b, t)
 	return b
 }
 const BITMAP_OPTS = {imageOrientation: 'flipY', premultiplyAlpha: 'none'}
 let preprocess = true
 const TEX_PROTO = class{
-	fromSrc(src,o){this.from(fetch(src,o).then(a=>a.blob()));return this}
+	fromSrc(src,o){this.from(typeof src=='string'?fetch(src,o).then(a=>a.blob()):src);return this}
 	from(thing, format = NS.Formats.RGBA, options = defaultOptions){
 		if(typeof thing != 'object') return
-		this.format = format
+		this.format = format; this.options = options
 		if(thing instanceof Blob) thing = createImageBitmap(thing, BITMAP_OPTS)
 		if(thing.then) return thing.then(thing => this.from(thing, format, options))
 		bindt(this)
@@ -72,8 +73,9 @@ const TEX_PROTO = class{
 		else gl.texSubImage3D(GL.TEXTURE_2D_ARRAY, 0, x, y, z, thing.width, thing.height, 1, this.format[1], this.format[2], thing)
 		this.mipmap|=1
 	}
-	options(options = defaultOptions){
+	setOptions(options = defaultOptions){
 		bindt(this)
+		this.options = options
 		const b = this.layers?GL.TEXTURE_2D_ARRAY:GL.TEXTURE_2D
 		gl.texParameteri(b, GL.TEXTURE_MAG_FILTER, (~options&1)+GL.NEAREST)
 		const f = (~options>>1)&3
@@ -87,7 +89,7 @@ const TEX_PROTO = class{
 		this.layers = layers
 		const b = bindt(this)
 		const {0: A, 1: B, 2: C} = format
-		this.format = format
+		this.format = format; this.options = options
 		if(layers) gl.texImage3D(b, 0, A, this.width = width, this.height = height, layers, 0, B, C, null)
 		else gl.texImage2D(b, 0, A, this.width = width, this.height = height, 0, B, C, null)
 		gl.texParameteri(b, GL.TEXTURE_MAG_FILTER, (~options&1)+GL.NEAREST)
@@ -104,7 +106,7 @@ const TEX_PROTO = class{
 		gl.texSubImage2D(GL.TEXTURE_2D, 0, sx, sy, sw, sh, format[1], format[2], data)
 		this.mipmap|=1
 	}
-	putDataLayers(sx=0, sy=0, sz=0, sw, sh, sd, data, l=0, format=this.format){
+	putDataLayers(sx=0, sy=0, sz=0, sw, sh, sd, data, format=this.format){
 		bindt(this)
 		if(preprocess) gl.pixelStorei(37440,0), gl.pixelStorei(37441,0), preprocess = false
 		gl.texSubImage2D(GL.TEXTURE_2D_ARRAY, 0, sx, sy, sz, sw, sh, sd, format[1], format[2], data)
@@ -173,6 +175,7 @@ class M{
 		}
 	}
 	sub(){ return new M(this.arr,this.#a,this.#b,this.#c,this.#d,this.#e,this.#f) }
+	resetTo(m){this.#a=m.#a;this.#b=m.#b;this.#c=m.#c;this.#d=m.#d;this.#e=m.#e;this.#f=m.#f}
 	add(fx = 0, t1=0, t2=0, t3=0, t4=0, {x:tx,y:ty,w:tw,h:th,l} = whole){
 		const j = (this.arr.i+=16)-16, cur = this.arr.cur
 		cur[j  ] = this.#a; cur[j+1] = this.#c; cur[j+2] = this.#e
@@ -218,12 +221,12 @@ class M{
 			gl.enableVertexAttribArray(i)
 			gl.vertexAttribDivisor(i, 1)
 		}
-		v.count = L/64
+		v.size = L/64
 		v.buf = b
 		this.delete()
 		return v
 	}
-	get count(){ return this.arr.length*512+this.arr.i/16 }
+	get size(){ return this.arr.length*512+this.arr.i/16 }
 	delete(){
 		if(fpool.length < 128) fpool.push(this.arr.cur)
 		for(let i = Math.min(this.arr.length, 128-fpool.length); i >= 0; i--) fpool.push(this.arr[i])
@@ -413,7 +416,7 @@ class Target{
 		}
 		gl.stencilMask(1<<(this.fb?this.fb.stencil:mainStencil))
 	}
-	draw(buf, textures, mask = 15, blend = 1135889, count=Infinity){
+	draw(buf, textures, mask = 15, blend = 1135889, size=Infinity){
 		if(fb!=this.fb) gl.bindFramebuffer(GL.FRAMEBUFFER, fb = this.fb)
 		const W = (fb||gl.canvas).width, H = (fb||gl.canvas).height
 		if(!W|!H) return
@@ -484,21 +487,21 @@ class Target{
 		if(tt) tt.mipmap|=1
 		if(buf instanceof WebGLVertexArrayObject){
 			if(bvo != buf) gl.bindVertexArray(bvo = buf)
-			gl.drawArraysInstanced(GL.TRIANGLE_STRIP, 0, 4, Math.min(count, buf.count))
+			gl.drawArraysInstanced(GL.TRIANGLE_STRIP, 0, 4, Math.min(size, buf.size))
 			return
 		}
 		gl.bindBuffer(GL.ARRAY_BUFFER, glbuf)
 		if(bvo) gl.bindVertexArray(bvo = null)
 		if(!buf.arr){
 			gl.bufferData(GL.ARRAY_BUFFER, buf, GL.STREAM_DRAW)
-			gl.drawArraysInstanced(GL.TRIANGLE_STRIP, 0, 4, Math.min(count, buf.byteLength/64))
+			gl.drawArraysInstanced(GL.TRIANGLE_STRIP, 0, 4, Math.min(size, buf.byteLength/64))
 		}else{
 			if(!buf.arr.cur)return warns!=(warns&=-65)?console.warn('.draw(): Mesh has already been consumed. Use .upload() if you want to draw the mesh more than once'):void 0
 			gl.bufferData(GL.ARRAY_BUFFER, buf.arr.length*32768+buf.arr.i*4, GL.STREAM_DRAW)
 			for(let i = 0; i < buf.arr.length; i++)
 				gl.bufferSubData(GL.ARRAY_BUFFER, i*32768, buf.arr[i])
 			gl.bufferSubData(GL.ARRAY_BUFFER, buf.arr.length*32768, buf.arr.cur, 0, buf.arr.i)
-			gl.drawArraysInstanced(GL.TRIANGLE_STRIP, 0, 4, Math.min(count, buf.count))
+			gl.drawArraysInstanced(GL.TRIANGLE_STRIP, 0, 4, Math.min(size, buf.size))
 			buf.delete()
 		}
 	}
@@ -558,7 +561,7 @@ Object.assign(NS, {
 	RGB: 7, RGBA: 15,
 	IF_ONE: 16,
 	IF_ZERO: 32,
-	DONT_DRAW: 48,
+	NO_DRAW: 48,
 	UNSET: 64,
 	SET: 128,
 	FLIP: 192,

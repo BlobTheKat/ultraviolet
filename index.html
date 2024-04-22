@@ -37,7 +37,7 @@
 		c{
 			font-family: Consolas, monospace;
 			padding: 0 2px; background: #fff3; border-radius: 6px;
-			user-select: all; font-weight: 700;
+			user-select: text; font-weight: 700;
 		}
 		k{
 			font-family: Consolas, monospace;
@@ -50,7 +50,8 @@
 		k n{ color: #e52 }
 		k m{ color: #dd8 }
 		k d{ color: #bbf }
-		hr{ border: none; height: 2px; background: #fff5; margin: 1em 0 }
+		k o{ color: #ffffff4d }
+		hr{ border: none; height: 2px; background: #fff5; margin: 2.5em 0 }
 		[refto]{ text-decoration: underline; cursor: pointer }
 		#docs{ padding-top: 16px }
 		#docs > div{ display: none }
@@ -302,18 +303,18 @@ Thank you for coming to my TED talk.
 <div id="docs" hidden>
 	<h2 refto="exports">Module exports</h2>
 	<h2 refto="constants">Constants</h2>
-	<h2 refto="texture">Texture (wip)</h2>
+	<h2 refto="texture">Texture</h2>
 	<h2 refto="uv">UV</h2>
-	<h2 refto="mesh">Mesh (wip)</h2>
-	<h2 refto="target">Target (wip)</h2>
+	<h2 refto="mesh">Mesh</h2>
+	<h2 refto="target">Target</h2>
 	<h2 refto="transformable">Transformable (wip)</h2>
-	<h2 refto="shader">Shader (wip)</h2>
-	<h2 refto="blend">Blend (wip)</h2>
+	<h2 refto="shader">Shader</h2>
+	<h2 refto="blend">Blend</h2>
 	<hr>
 	<div id="exports">
 		Sets the canvas to initialise the drawing context from.<br>
 		You must call this or <c>autoCanvas()</c> before making use of any other function or method
-		<k><m>setTargetCanvas</m>(canvas: <t>HTMLCanvasElement</t>) -> <t refto="target">Target</t></k>
+		<k id="stc"><m>setTargetCanvas</m>(canvas: <t>HTMLCanvasElement</t>) -> <t refto="target">Target</t></k>
 		<hr>
 		Creates a new canvas and appends it to the body.<br>
 		Automatically resizes the canvas to fit the screen and transforms it to CSS-pixel space for you<br>
@@ -349,31 +350,32 @@ Thank you for coming to my TED talk.
 	<div id="constants">
 		<k><d>_</d> = <t>undefined</t><br><d>PI</d> = <d style="color:#ae2">3.141592653589793</d><br><d>PI2</d> = PI*<d style="color:#ae2">2</d></k>
 		<k><d>Formats</d> = {<br>
-			&nbsp;&nbsp;<d style="color:#ffffff4d">// Regular 8 bit formats</d><br>
+			&nbsp;&nbsp;<o>// Normal 8-bit-per-channel formats</o><br>
 			&nbsp;&nbsp;<d>R</d>, <d>RG</d>, <d>RGB</d>, <d>RGBA</d>,<br>
-			&nbsp;&nbsp;<d style="color:#ffffff4d">// Varying bits shared between different channels<br>
-			&nbsp;&nbsp;// Upload data by packing into 8/16/32 bit ints</d><br>
+			&nbsp;&nbsp;<o>// Varying bits shared between different channels<br>
+			&nbsp;&nbsp;// Upload data by packing channels into 8/16/32 bit ints</o><br>
 			&nbsp;&nbsp;<d>RGB565</d>, <d>RGB5_A1</d>, <d>RGB10_A2</d>,<br>
 			&nbsp;&nbsp;<d>RGBA4</d>, <d>R11F_G11F_B10F</d>, <d>RGB9_E5</d>,<br>
-			&nbsp;&nbsp;<d style="color:#ffffff4d">// Integer 8, 16 and 32 bit textures</d><br>
+			&nbsp;&nbsp;<o>// Integer 8, 16 and 32 bit textures<br>
+			&nbsp;&nbsp;Must be referenced with utex0,...,utex7 in shader source code</o><br>
 			&nbsp;&nbsp;<d>R8</d>, <d>RG8</d>, <d>RGB8</d>, <d>RGBA8</d>,<br>
 			&nbsp;&nbsp;<d>R16</d>, <d>RG16</d>, <d>RGB16</d>, <d>RGBA16</d>,<br>
 			&nbsp;&nbsp;<d>R32</d>, <d>RG32</d>, <d>RGB32</d>, <d>RGBA32</d>,<br>
-			&nbsp;&nbsp;<d style="color:#ffffff4d">// half-precision float textures</d><br>
+			&nbsp;&nbsp;<o>// half-precision float textures, upload as Uint16Array</o><br>
 			&nbsp;&nbsp;<d>R16F</d>, <d>RG16F</d>, <d>RGB16F</d>, <d>RGBA16F</d>,<br>
-			&nbsp;&nbsp;<d style="color:#ffffff4d">// half-precision float textures that allow you<br>
-			&nbsp;&nbsp;// to upload data with single-precision floats</d><br>
+			&nbsp;&nbsp;<o>// half-precision float textures that allow you<br>
+			&nbsp;&nbsp;// to upload data via Float32Arrays</o><br>
 			&nbsp;&nbsp;<d>R16F_32F</d>, <d>RG16F_32F</d>, <d>RGB16F_32F</d>, <d>RGBA16F_32F</d>,<br>
-			&nbsp;&nbsp;<d style="color:#ffffff4d">// single-precision float textures</d><br>
+			&nbsp;&nbsp;<o>// single-precision float textures</o><br>
 			&nbsp;&nbsp;<d>R32F</d>, <d>RG32F</d>, <d>RGB32F</d>, <d>RGBA32F</d><br>
 		}</k>
 		<k>
-			<d style="color:#ffffff4d">// Constants used by third argument to (Target).draw()</d><br>
+			<o>// Constants used by third argument to (Target).draw()</o><br>
 			<d>R</d>, <d>G</d>, <d>B</d>, <d>A</d>, <d>RGB</d> = R|G|B, <d>RGBA</d> = R|G|B|A<br>
 			<d>IF_ONE</d>, <d>IF_ZERO</d>, <d>DONT_DRAW</d><br>
 			<d>UNSET</d>, <d>SET</d>, <d>FLIP</d><br>
 			<d>DITHERING</d><br><br>
-			<d style="color:#ffffff4d">// Constants used by BlendMultiplier</d><br>
+			<o>// Constants used by BlendMultiplier</o><br>
 			<d>ZERO</d><br>
 			<d>RGB_ONE</d>, <d>A_ONE</d><br>
 			<d>ONE</d> = RGB_ONE|A_ONE</d><br>
@@ -391,14 +393,14 @@ Thank you for coming to my TED talk.
 			<d>ONE_MINUS_DST_ALPHA</d> = RGB_ONE_MINUS_DST_ALPHA|A_ONE_MINUS_DST<br>
 			<d>RGB_SRC_ALPHA_SATURATE,</d><br>
 			<d>SRC_ALPHA_SATURATE</d> = RGB_SRC_ALPHA_SATURATE|A_ONE<br><br>
-			<d style="color:#ffffff4d">// Constants used by BlendCombine</d><br>
+			<o>// Constants used by BlendCombine</o><br>
 			<d>RGB_ADD</d>, <d>A_ADD</d>, <d>ADD</d> = RGB_ADD|A_ADD<br>
 			<d>RGB_SUBTRACT</d>, <d>A_SUBTRACT</d>, <d>SUBTRACT</d> = RGB_SUBTRACT|A_SUBTRACT<br>
 			<d>RGB_REVERSE_SUBTRACT</d>, <d>A_REVERSE_SUBTRACT</d><br>
 			<d>REVERSE_SUBTRACT</d> = RGB_REVERSE_SUBTRACT|A_REVERSE_SUBTRACT<br>
 			<d>RGB_MIN</d>, <d>A_MIN</d>, <d>MIN</d> = RGB_MIN|A_MIN<br>
 			<d>RGB_MAX</d>, <d>A_MAX</d>, <d>MAX</d> = RGB_MAX|A_MAX<br><br>
-			<d style="color:#ffffff4d">// Constants used by TextureOptions</d><br>
+			<o>// Constants used by TextureOptions</o><br>
 			<d>UPSCALE_PIXELATED</d>, <d>DOWNSCALE_PIXELATED</d>, <d>DOWNSCALE_MIPMAP_NEAREST</d><br>
 			<d>PIXELATED</d> = UPSCALE_PIXELATED|DOWNSCALE_PIXELATED|DOWNSCALE_MIPMAP_NEAREST<br>
 			<d>MIPMAPS</d><br>
@@ -408,6 +410,11 @@ Thank you for coming to my TED talk.
 		</k>
 	</div>
 	<div id="texture">
+		Types related to <c>Texture</c>
+		<k><n>type</n> <d>ImageSource</d> = <t>Blob</t> | <t>HTMLImageElement</t> | <t>HTMLCanvasElement</t> | <t>HTMLVideoElement</t> | <t>ImageData</t> | <t>ImageBitmap</t><br>
+		<n>type</n> <d>TextureOptions</d> = <d>REPEAT_X</d>? | <d>REPEAT_Y</d>? | <d>REPEAT</d>? | <d>REPEAT_MIRRORED_X</d>? | <d>REPEAT_MIRRORED_Y</d>? | <d>REPEAT_MIRRORED</d>? | <d>UPSCALE_PIXELATED</d>? | <d>DOWNSCALE_PIXELATED</d>? | <d>DOWNSCALE_MIPMAP_NEAREST</d>? | <d>PIXELATED</d>? | <d>MIPMAPS</d>?<br>
+		<n>default</n> format = <d>Formats.RGBA</d></k>
+		<hr>
 		Construct a new uninitialised texture object. Do not use <c>new</c>.<br>
 		If <c>layer == 0</c>, the texture will be a flat texture, with no concept of layers. All functions that accept a layer argument will ignore that argument.<br>
 		Otherwise, the texture is a layered texture, which may hold different data on each layer.<br>
@@ -416,7 +423,49 @@ Thank you for coming to my TED talk.
 		<k><n>constructor</n>(width?: <t>int</t>, height?: <t>int</t>, layers?: <t>int</t>, format?: <n>valueof</n> <t refto="constants">Formats</t>, options?: <t>TextureOptions</t>)</k>
 		<hr>
 		Set the default <c>options</c> parameter for all future texture initialisations
-		<k><n>static</n> .<m>defaultOptions</m>(options?: <t>TextureOptions</t>)</k>
+		<k>Texture.<m>setDefaultOptions</m>(options?: <t>TextureOptions</t>)</k>
+		<hr>
+		Initialise the texture from a URL or Image source. The texture may not be ready immediately, but is loaded in the background. If you need to run a callback after the image has loaded, use <c>.from(...)</c>
+		<k>.<m>fromSrc</m>(src: <t>string</t> | <t>ImageSource</t>, format?: <n>valueof</n> <t refto="constants">Formats</t>, options?: <t>TextureOptions</t>) -> <t>this</t></k>
+		<hr>
+		Initialise the texture from an Image source. If the image source cannot be resolved immediately, a promise is returned, If you do not want to handle the case of when a promise is returned, use <c>.fromSrc(...)</c>
+		<k>.<m>from</m>(img: <t>ImageSource</t>, format?: <n>valueof</n> <t refto="constants">Formats</t>, options?: <t>TextureOptions</t>) -> <t>Promise</t>&lt;<t>this</t>> | <t>this</t></k>
+		<hr>
+		Initialise the texture as empty, same as the constructor
+		<k>.<m>of</m>(width?: <t>int</t>, height?: <t>int</t>, layers?: <t>int</t>, format?: <n>valueof</n> <t refto="constants">Formats</t>, options?: <t>TextureOptions</t>) -> <t>this</t></k>
+		<hr>
+		Set the texture options for this texture</c>
+		<k>.<m>setOptions</m>(options?: <t>TextureOptions</t>) -> <t>this</t></k>
+		<hr>
+		Convert a sub-rectangle specified in pixel coordinates from the top-left corner into a <c refto="uv">UV</c> (UV coordinates are (0,0)-(1,1) from the bottom left)<br>
+		Note that this function is only useful once the image has been fully loaded, as the actual width and height of the texture are required to perform the conversion
+		<k>.<m>uv</m>(x?: <t>number</t>, y?: <t>number</t>, width?: <t>number</t>, height?: <t>number</t>, layer?: <t>number</t>) -> <t refto="uv">UV</t></k>
+		<hr>
+		Write an Image source within a sub-rect of the texture.<br>Just like with <c>.from(...)</c>, a promise is returned if the image source cannot be resolved immediately
+		<k>.<m>put</m>(img: <t>ImageSource</t>, x?: <t>int</t>, y?: <t>int</t>, layer?: <t>int</t>) -> <t>Promise</t>&lt;<t>this</t>> | <t>this</t></k>
+		<hr>
+		Put some pixels at a sub-rectangle in the texture, from a <c>TypedArray</c>.<br>
+		This method is only applicable for flat textures (i.e <c>.layers == 0</c>).<br>
+		If specified, format must be compatible with the texture's format or the operation will fail
+		<k>.<m>putData</m>(x?: <t>int</t>, y?: <t>int</t>, width?: <t>int</t>, height?: <t>int</t>, data: <t>Uint8Array</t> | <t>Uint16Array</t> | <t>Uint32Array</t> | <t>Float32Array</t>, format?: <n>valueof</n> <t refto="constants">Formats</t>)</k>
+		<hr>
+		Put some pixels at a sub-rectangle in the texture, from a <c>TypedArray</c>.<br>
+		This method is only applicable for layered textures (i.e <c>.layers > 0</c>).<br>
+		If specified, format must be compatible with the texture's format or the operation will fail
+		<k>.<m>putDataLayers</m>(x?: <t>int</t>, y?: <t>int</t>, layer?: <t>int</t>, width?: <t>int</t>, height?: <t>int</t>, depth?: <t>int</t>, data: <t>Uint8Array</t> | <t>Uint16Array</t> | <t>Uint32Array</t> | <t>Float32Array</t>, format?: <n>valueof</n> <t refto="constants">Formats</t>)</k>
+		<hr>
+		Delete the texture. Its resources will be freed once any draw operations making use of the texture are completed.<br>The texture cannot be used, modified or re-initialised again
+		<k>.<m>delete</m>()</k>
+		<hr>
+		The texture's width and height in pixels
+		<k><n>readonly</n> .width: <t>int</t><br><n>readonly</n> .height: <t>int</t></k><br>
+		The number of layers in a layered texture, or <c>0</c> if the texture is flat and not layered
+		<k><n>readonly</n> .layers: <t>int</t></k>
+		<hr>
+		The texture's format, specified when the texture was last initialised
+		<k><n>readonly</n> .format: <n>valueof</n> <t refto="constants">Formats</t></k><br>
+		The texture's options, specified when the texture was last initialised or from <c>.setOptions(...)</c>
+		<k><n>readonly</n> .options: <t>TextureOptions</t></k>
 	</div>
 	<div id="uv">
 		<k><n>type</n> <t>UV</t> = {x: <t>number</t>, y: <t>number</t>, w: <t>number</t>, h: <t>number</t>, l: <t>number</t>}</k>
@@ -428,25 +477,246 @@ Thank you for coming to my TED talk.
 		<hr>
 		Create a new uv as a sub-rect of another, imagining (0, 0) to be the bottom left of the reference uv and (1, 1) to be the top right
 		<k>.<m>sub</m>(x?: <t>number</t>, y?: <t>number</t>, w?: <t>number</t>, h?: <t>number</t>) -> <t>UV</t></k>
+		</k>
 	</div>
 	<div id="mesh">
 		Construct a new mesh. Do not use <c>new</c>.<br>
-		Unlike textures, meshes use entirely CPU memory, exactly 64 bytes per sprite they contain. That means a mesh with 1,000,000 sprites will take up approximately 64MB of CPU memory while it is being built up until it is consumed (either with <c>mesh.upload()</c> or <c>(Target).draw(mesh)</c>)
+		Unlike textures, meshes use entirely CPU memory, exactly 64 bytes per sprite they contain. That means a mesh with 1,000,000 sprites will take up approximately 64MB of CPU memory while it is being built, up until it is consumed (either with <c>mesh.upload()</c> or <c>(Target).draw(mesh)</c>)
 		<k><n>constructor</n>()</k>
 		<hr>
 		These arguments are used by most of <c>Mesh</c>'s methods
 		<k><n>arguments</n> <d>SpriteParams</d> = (uv?: <t>UV</t>, effect?: <t>number</t>, r?: <t>number</t>, g?: <t>number</t>, b?: <t>number</t>, a?: <t>number</t>)</k>
 		<hr>
 		Construct a mesh consisting of a single sprite, optionally from a rectangle or 3x2 matrix.<br>This is a convenience function that is also usually more performant than its longer form
-		<k><n>static</n> .<m>single</m>(...<d>SpriteParams</d>) -> <t>Mesh</t><br>
-		<n>static</n> .<m>singleRect</m>(x: <t>number</t>, y: <t>number</t>, w: <t>number</t>, h: <t>number</t>, ...<d>SpriteParams</d>) -> <t>Mesh</t><br>
-		<n>static</n> .<m>singleMat</m>(a: <t>number</t>, b: <t>number</t>, c: <t>number</t>, d: <t>number</t>, e: <t>number</t>, f: <t>number</t>, ...<d>SpriteParams</d>) -> <t>Mesh</t></k>
+		<k>Mesh.<m>single</m>(...<d>SpriteParams</d>) -> <t>Mesh</t><br>
+		Mesh.<m>singleRect</m>(x: <t>number</t>, y: <t>number</t>, w: <t>number</t>, h: <t>number</t>, ...<d>SpriteParams</d>) -> <t>Mesh</t><br>
+		Mesh.<m>singleMat</m>(a: <t>number</t>, b: <t>number</t>, c: <t>number</t>, d: <t>number</t>, e: <t>number</t>, f: <t>number</t>, ...<d>SpriteParams</d>) -> <t>Mesh</t></k>
 		<hr>
+		Meshes are transformable. The methods <c>.add(...)</c>, <c>.addRect(...)</c> and <c>.addMat(...)</c> transform their coordinates based on the current transformation.<br>
+		For example, calling <c>.scale(3, 3)</c> followed by <c>.addRect(0, 0, 10, 10, ...)</c> will in effect add a sprite of width and height 30
+		<k><d>Mesh</d> <n>implements</n>  <t refto="transformable">Transformable</t></k>
+		<hr>
+		Add a sprite at coordinates (0,0) to (1,1) with the specified sprite properties
+		<k>.<m>add</m>(...<d>SpriteParams</d>)</k>
+		<hr>
+		Add a sprite at coordinates <c>(x, y)</c> and size <c>(w, h)</c> (so that the top-right corner is at <c>(x+w, y+h)</c>) with the specified sprite properties
+		<k>.<m>addRect</m>(x?: <t>number</t>, y?: <t>number</t>, width?: <t>number</t>, height?: <t>number</t>, ...<d>SpriteParams</d>)</k>
+		<hr>
+		Add a sprite from a matrix with the specified sprite properties.<br>
+		Matrices don't have to be hard to get right. The resulting sprite will have its:<br>
+		- Bottom-left corner at <c>(e, f)</c><br>
+		- Bottom-right corner at <c>(a, b)</c> from the bottom-left corner (i.e, it will be at <c>(e+a, f+b)</c>)<br>
+		- Top-left corner at <c>(c, d)</c> from the bottom-left corner (i.e, it will be at <c>(e+c, f+d)</c>)<br>
+		- Top-right corner will be at <c>(c, d)</c> from the bottom-right corner, which is also <c>(a, b)</c> from the top-left corner (i.e, it will be at <c>(e+a+c, f+b+d)</c>)<br>
+		The resulting sprite will always be at least a parallelogram (if not a square or rectangle)<br>
+		<k>.<m>addMat</m>(a?: <t>number</t>, b?: <t>number</t>, c?: <t>number</t>, d?: <t>number</t>, e?: <t>number</t>, f?: <t>number</t>, ...<d>SpriteParams</d>)</k>
+		<hr>
+		Upload the mesh to the GPU. The mesh will be deleted and a <c>MeshUpload</c> object will be returned.<br>
+		<c>MeshUpload</c> objects:<br>
+		- Are opaque and cannot be modified, only referenced<br>
+		- Can be passed to <c>(Target).draw(...)</c> instead of the mesh<br>
+		- Are not consumable, they can be drawn an infinite number of times<br>
+		- Have a <c>.size</c> property much like <c>Mesh</c>es<br>
+		Once you no longer need a <c>MeshUpload</c> object, consider calling <c>.delete()</c> on it
+		<k id="meshupload">.<m>upload</m>() -> <t>MeshUpload</t></k>
+		<hr>
+		Delete the mesh object.<br>
+		Since both <c>(Target).draw(...)</c> and <c>.upload(...)</c> delete the mesh for you, the only time you will need this method is if the mesh was never consumed and you would like to free its resources immediately for performance reasons.<br>
+		Any future calls to <c>.add/addRect/addMat(...)</c> or <c>.upload/export/import(...)</c> will throw an error
+		<k>.<m>delete</m>()</k>
+		<hr>
+		Export all of the sprite data from this mesh as a <c>Float32Array</c> of length <c>16 * mesh.size</c>. The mesh is not consumed and can still be expanded or drawn
+		<k>.<m>export</m>() -> <t>Float32Array</t></k>
+		<hr>
+		Import all of the sprite data from a <c>Float32Array</c> whose length is a multiple of 16. The imported sprites are appended to the end of this mesh
+		<k>.<m>import</m>(data: <t>Float32Array</t>)</k>
+		<hr>
+		The number of sprites currently in this mesh
+		<k><n>readonly</n> .size: <t>int</t></k>
 	</div>
-	<div id="target"></div>
-	<div id="transformable"></div>
-	<div id="shader"></div>
-	<div id="blend"></div>
+	<div id="target">
+		Construct a new draw target. Do not use <c>new</c>.<br>
+		Draw targets facilitate drawing to textures or other objects. The value returned by <c refto="stc">setTargetCanvas(...)</c> is itself a target, which draws its commands to the supplied <c>&lt;canvas></c> element
+		<k><n>constructor</n>(width?: <t>int</t>, height?: <t>int</t>, format?: <n>valueof</n> <t refto="constants">Formats</t>, stencil?: <t>boolean</t>)<br>
+		<n>constructor</n>(texture: <t refto="texture">Texture</t>, layer?: <t>int</t>, stencil?: <t>boolean</t>)</k>
+		<hr>
+		Targets are transformable. The method <c>.draw(...)</c> transform all of the mesh's coordinates based on the current transformation.<br>
+		For example, calling <c>.rotate(PI/2)</c> followed by <c>.draw(myMesh, ...)</c> will in effect draw myMesh rotated 90 degrees (.5 radians)<br>
+		With the default transformation, the bottom-left of the target's output is at coordinates <c>(0, 0)</c> and the top-right is at coordinates <c>(1, 1)</c>
+		<k><d>Target</d> <n>implements</n> <t refto="transformable">Transformable</t></k>
+		<hr>
+		Draws a mesh to the target's output<br>
+		If <c>textures</c> is not specified, the textures from the previous <c>.draw(...)</c> call will be used, <b>as long as no textures have been mutated since then</b> (if they have, then you must re-specify <c>textures</c>).<br>
+		If <c>textures</c> is not an array, then <c>textures = [textures]</c>.<br>
+		The default value for <c>drawFlags</c> is <c>R | G | B | A</c> (or short, <c>RGBA</c>).<br>
+		The default value for <c>blend</c> is <c>Blend(ONE, ADD, ONE_MINUS_SRC_ALPHA)</c>.<br>
+		If the provided mesh has more sprites than <c>maxSprites</c>, then only the first <c>maxSprites</c> sprites of the mesh will be drawn
+		<k>.<m>draw</m>(mesh: <t refto="mesh">Mesh</t> | <t refto="meshupload">MeshUpload</t> | <t>Float32Array</t>, textures?: <t refto="texture">Texture</t> | <t>Array</t>&lt;<t refto="texture">Texture</t>>, drawFlags?: <t>DrawFlags</t>, blend?: <t refto="blend">Blend</t>, maxSprites?: <t>int</t>)</k>
+		<hr>
+		<c>R</c>, <c>G</c>, <c>B</c> and <c>A</c> enable drawing to the respective color channels.<br>
+		<c>IF_ONE</c> and <c>IF_ZERO</c> limit drawing to only where the stencil buffer is one or zero repectively.<br>
+		<c>NO_DRAW</c> forces the stencil test to always fail, resulting in no colors drawn.<br>
+		<c>SET</c> and <c>UNSET</c> will set/unset the stencil value wherever something is drawn.<br>
+		<c>FLIP</c> is the same as <c>SET | UNSET</c> and will set the stencil value to one where it was zero and to zero where it was one.<br>
+		<c>DITHERING</c> will try to enable dithering to create smoother gradients, especially for low precision formats. This is a hint and is not guaranteed to have an effect on all devices
+		<k><n>type</n> <d>DrawFlags</d> = <d>R</d>? | <d>G</d>? | <d>B</d>? | <d>A</d>? | <d>RGB</d>? | <d>RGBA</d>? | <d>IF_ONE</d>? | <d>IF_ZERO</d>? | <d>SET</d>? | <d>UNSET</d>? | <d>FLIP</d>? | <d>NO_DRAW</d>? | <d>DITHERING</d>?<br></k>
+		<hr>
+		Change the texture output of the target. All future draw operations will draw to this texture (at the specified layer if the texture is layered)<br>
+		This method is invalid on the main target (the one returned by <c>setTargetCanvas/autoCanvas(...)</c>)
+		<k>.<m>setTexture</m>(texture: <t refto="texture">Texture</t>, layer?: <t>int</t>)</k>
+		<hr>
+		Resize the target to the specified size<br>
+		If the target was configured to draw to a texture, it will no longer draw to that texture but to a new surface constructed from the arguments.<br>
+		If called on the main target, its <c>&lt;canvas></c> element will be resized. Chrome supports <c>Formats.RGBA</c> and <c>Formats.RGBA16F</c> for the main target, while most other browsers only support <c>Formats.RGBA</c> for the main target.
+		<k>.<m>resize</m>(width: <t>int</t>, height: <t>int</t>, format?: <n>valueof</n> <t refto="constants">Formats</t>)</k>
+		<hr>
+		Copy a sub-rect of the target's data to a texture. If the target has a texture output, the supplied texture cannot be the same as the target's output texture
+		<k>.<m>copyTo</m>(texture: <t refto="texture">Texture</t>, textureX?: <t>int</t>, textureY?: <t>int</t>, textureLayer?: <t>int</t>, x?: <t>int</t>, y?: <t>int</t>, width?: <t>int</t>, height?: <t>int</t>)</k>
+		<hr>
+		Read pixels from a sub-rect into a <c>TypedArray</c>.<br>
+		If <c>arr</c> is specified, it must be of the right type and length. If it is, its contents will be replaced and the array will be returned.<br>
+		If <c>arr</c> isn't specified, it will be automatically created with the right type and length and then returned
+		<k>.<m>getData</m>(x?: <t>int</t>, y?: <t>int</t>, width?: <t>int</t>, height?: <t>int</t>, arr?: <t>TypedArray</t>) -> <t>Uint8Array</t> | <t>Uint16Array</t> | <t>Uint32Array</t> | <t>Float32Array</t></k>
+		<hr>
+		Clear the target's output to a plain color (transparent black by default).<br>
+		Set any of the arguments to <c>NaN</c> to not clear that channel.<br>
+		Also clears the stencil buffer
+		<k>.<m>clear</m>(r?: <t>number</t>, g?: <t>number</t>, b?: <t>number</t>, a?: <t>number</t>)</k>
+		<hr>
+		Clear the target's output to a plain color (transparent black by default).<br>
+		Set any of the arguments to <c>NaN</c> to not clear that channel.<br>
+		Does not clear the stencil buffer
+		<k>.<m>clearColor</m>(r?: <t>number</t>, g?: <t>number</t>, b?: <t>number</t>, a?: <t>number</t>)</k>
+		<hr>
+		Clears the stencil buffer to zero
+		<k>.<m>clearStencil</m>()</k>
+		<hr>
+		Use a shader for all future draw calls performed on this specific sub-view of the target.<br>
+		(See <b refto="subview">more about subviews</b>; <b refto="shader">more on shaders & uniforms</b>)
+		<k>.<m>useShader</m>(shader?: <t refto="shader">Shader</t>)</k>
+		<hr>
+		Sets the <c>u</c> uniform for all future draw calls performed on this specific sub-view of the target.<br>
+		(See <b refto="subview">more about subviews</b>; <b refto="shader">more on shaders & uniforms</b>)
+		<k>.<m>setU</m>(ux: <t>number</t>, uy: <t>number</t>, uz: <t>number</t>, uw: <t>number</t>)</k>
+		<hr>
+		Sets the <c>s</c> and <c>t</c> uniform for all future draw calls performed on this specific sub-view of the target.<br>
+		(See <b refto="subview">more about subviews</b>; <b refto="shader">more on shaders & uniforms</b>)
+		<k>.<m>setST</m>(s: <t>number</t>, t: <t>number</t>)</k>
+		<hr>
+		Delete the target and its resources. Does not delete its texture output (if it had one)
+		<k>.<m>delete</m>()</k>
+		<hr>
+		The target's output's width and height in pixels
+		<k><n>readonly</n> .width: <t>int</t><br>
+		<n>readonly</n> .height: <t>int</t></k><br>
+		The target's texture output, if any
+		<k><n>readonly</n> .texture: <t refto="texture">Texture</t> | <t>null</t></k><br>
+		The underlying <b>WebGL2</b> context powering the library
+		<k><n>readonly</n> .gl: <t>WebGL2RenderingContext</t></k>
+	</div>
+	<div id="transformable">work in progress :(</div>
+	<div id="shader">
+		Create a shader. Do not use <c>new</c>.<br>
+		When this shader is in use, the <c>main()</c> GLSL function will be invoked for every drawn pixel. It must write a color value to <c>color</c>, or execute <c>discard;</c> to indicate that the pixel is to be abandoned and nothing is to be drawn. Do not put a version header or uniforms inside your shader source, they are added for you by the library
+		<k><n>constructor</n>(glslSource: <t>string</t>) -> <t>Shader</t></k>
+		<hr>
+		Example of a valid shader:<br>(this is the default shader)
+		<k><n>void</n> main(){<br>
+			&nbsp;&nbsp;<o>// tex0 is a flat texture therefore texture() expects a vec2 coordinate</o><br>
+			&nbsp;&nbsp;<d>color</d> = <m>texture</m>(<d>tex0</d>, <d>uv</d>.xy) * (<d style="color:#ae2">1.0</d> - <d>tint</d>);<br>
+		}</k>
+		<hr>
+		Values exposed in the GLSL shader:
+		<k>
+			<n>uniform vec4</n> u;<br>
+			<n>uniform float</n> s, t;<br>
+			<n>uniform sampler2D</n> tex0, tex1, ..., tex7;
+			<n>uniform sampler2DArray</n> atex0, atex1, ..., atex7;
+			<n>uniform usampler2D</n> utex0, utex1, ..., utex7;
+			<n>uniform usampler2DArray</n> uatex0, uatex1, ..., uatex7;
+			<n>in vec3</n> uv;<br>
+			<n>in vec2</n> pos, xy;<br>
+			<n>in float</n> effect;<br>
+			<n>in vec4</n> tint;<br>
+			<n>out vec4</n> color;<br>
+		</k><br>
+		Only one of <c>tex0, utex0, atex0, uatex0</c> may be used in a single shader. The same applies for <c>tex1, utex1, atex1, uatex1</c>, ..., <c>tex7, utex7, atex7, uatex7</c>.<br>
+		<c>pos</c> represents the coordinate inside the sprite, where <c>(0, 0)</c> is always the bottom-left of the sprite and <c>(1, 1)</c> is always the top-right<br>
+		<c>xy</c> represents the mesh-space coordinates of the current pixel<br>
+		<c>uv</c> corresponds to the <c>uv</c> value supplied to <c refto="mesh">SpiteParams</c><br>
+		<c>effect</c> corresponds to the <c>effect</c> value supplied to <c refto="mesh">SpiteParams</c><br>
+		<c>tint</c> corresponds to the <c>r, g, b, a</c> values supplied to <c refto="mesh">SpiteParams</c>
+	</div>
+	<div id="blend">
+		Create a blend mode. Do not use <c>new</c>.<br>
+		When this blend mode is in use, when drawing color <c>src</c> onto a canvas where the current pixel's color is <c>dst</c>, the blend mode will be used to determine how the two values are combined to determine the new value to write: <c>src * srcMult &lt;combineOp> dst * dstMult</c>
+		<k><n>constructor</n>(srcMult: <t>BlendMultiplier</t>, combineOp: <t>BlendCombine</t>, dstMult: <t>BlendMultiplier</t>) -> <t>Blend</t></k>
+		<hr>
+		Example: <c>Blend(ONE, ADD, ONE_MINUS_SRC_ALPHA)</c> (the default blend mode),<br>yields the equation <c>src * 1 + dst * (1 - src.a)</c>, which can be simplified to <c>src + dst*(1-src.a)</c>.<br>
+		This has the effect that where the drawn sprites have alpha 0, the RGBA values are added to the destination's values, and whn the drawn sprites have alpha 1, the RGBA values replace the destination's values.<br>
+		See further down for all possible blend multipliers and combine
+		<hr>
+		Below is a list of all possible values for <c>BlendMultiplier</c><br>
+		Values that start with <c>RGB_</c> only apply to the r, g and b channels<br>
+		Values that start with <c>A_</c> only apply to the alpha channel<br>
+		A <c>RGB_</c> and <c>A_</c> value can be ORed (<c> | </c>) together to create a new blend multiplier.<br>
+		Other values can only be used on their own
+		<k>
+			<d>ZERO</d> <o>// * 0</o><br>
+			<d>ONE</d> <o>// * 1</o><br>
+			<d>SRC</d> <o>// * src.rgba</o><br>
+			<d>ONE_MINUS_SRC</d> <o>// * (1 - src.rgba)</o><br>
+			<d>SRC_ALPHA</d> <o>// * src.a</o><br>
+			<d>ONE_MINUS_SRC_ALPHA</d> <o>// * (1 - src.a)</o><br>
+			<d>DST</d> <o>// * dst.rgba</o><br>
+			<d>ONE_MINUS_DST</d> <o>// * (1 - dst.rgba)</o><br>
+			<d>DST_ALPHA</d> <o>// * dst.a</o><br>
+			<d>ONE_MINUS_DST_ALPHA</d> <o>// * (1 - dst.a)</o><br>
+			<d>SRC_ALPHA_SATURATE</d> <o>//.rgb * min(src.a, 1-dst.a), .a * 1</o><br>
+			<br>
+			<d>RGB_ONE</d> <o>//.rgb * 1</o><br>
+			<d>RGB_SRC</d> <o>//.rgb * src.rgb</o><br>
+			<d>RGB_ONE_MINUS_SRC</d> <o>//.rgb * (1 - src.rgb)</o><br>
+			<d>RGB_SRC_ALPHA</d> <o>//.rgb * src.a</o><br>
+			<d>RGB_ONE_MINUS_SRC_ALPHA</d> <o>//.rgb * (1 - src.a)</o><br>
+			<d>RGB_DST</d> <o>//.rgb * dst.rgb</o><br>
+			<d>RGB_ONE_MINUS_DST</d> <o>//.rgb * (1 - dst.rgb)</o><br>
+			<d>RGB_DST_ALPHA</d> <o>//.rgb * dst.a</o><br>
+			<d>RGB_ONE_MINUS_DST_ALPHA</d> <o>//.rgb * (1 - dst.a)</o><br>
+			<d>RGB_SRC_ALPHA_SATURATE</d> <o>//.rgb * min(src.a, 1-dst.a)</o><br>
+			<br>
+			<d>A_ONE</d> <o>//.a * 1</o><br>
+			<d>A_SRC</d> <o>//.a * src.a</o><br>
+			<d>A_ONE_MINUS_SRC</d> <o>//.a * (1 - src.a)</o><br>
+			<d>A_DST</d> <o>//.a * dst.a</o><br>
+			<d>A_ONE_MINUS_DST</d> <o>//.a * (1 - dst.a)</o><br>
+		</k>
+		<hr>
+		Below is a list of all possible values for <c>BlendCombine</c><br>
+		Values that start with <c>RGB_</c> only apply to the r, g and b channels<br>
+		Values that start with <c>A_</c> only apply to the alpha channel<br>
+		A <c>RGB_</c> and <c>A_</c> value can be ORed (<c> | </c>) together to create a new blend combine.<br>
+		Other values can only be used on their own
+		<k>
+			<d>ADD</d> <o>// srcResult + dstResult</o><br>
+			<d>SUBTRACT</d> <o>// srcResult - dstResult</o><br>
+			<d>REVERSE_SUBTRACT</d> <o>// dstResult - srcResult</o><br>
+			<d>MIN</d> <o>// min(srcResult, dstResult)</o><br>
+			<d>MAX</d> <o>// max(srcResult, dstResult)</o><br>
+			<br>
+			<d>RGB_ADD</d> <o>// srcResult.rgb + dstResult.rgb</o><br>
+			<d>RGB_SUBTRACT</d> <o>// srcResult.rgb - dstResult.rgb</o><br>
+			<d>RGB_REVERSE_SUBTRACT</d> <o>// dstResult.rgb - srcResult.rgb</o><br>
+			<d>RGB_MIN</d> <o>// min(srcResult.rgb, dstResult.rgb)</o><br>
+			<d>RGB_MAX</d> <o>// max(srcResult.rgb, dstResult.rgb)</o><br>
+			<br>
+			<d>A_ADD</d> <o>// srcResult.a + dstResult.a</o><br>
+			<d>A_SUBTRACT</d> <o>// srcResult.a - dstResult.a</o><br>
+			<d>A_REVERSE_SUBTRACT</d> <o>// dstResult.a - srcResult.a</o><br>
+			<d>A_MIN</d> <o>// min(srcResult.a, dstResult.a)</o><br>
+			<d>A_MAX</d> <o>// max(srcResult.a, dstResult.a)</o><br>
+		</k>
+	</div>
 </div>
 <script>
 	let docsCurrent = docs.children.exports, docsCurrentH2 = docs.firstElementChild
@@ -455,12 +725,14 @@ Thank you for coming to my TED talk.
 		const node = document.getElementById(t.getAttribute('refto'))
 		if(t.parentElement == docs) node.h2 = t
 		t.onclick = () => {
-			if(node.parentElement != docs) return node.scrollIntoView()
+			let n = node
+			if(n.parentElement != docs) setTimeout(()=>n.scrollIntoView(),0,n), n = n.parentElement
+			if(n.parentElement != docs) return
 			docsCurrent.style.display = ''
-			;(docsCurrent = node).style.display = 'block'
-			if(node.h2){
+			;(docsCurrent = n).style.display = 'block'
+			if(n.h2){
 				docsselected.id = ''
-				node.h2.id = 'docsselected'
+				n.h2.id = 'docsselected'
 			}		
 		}
 	}
