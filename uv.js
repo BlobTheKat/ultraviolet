@@ -35,11 +35,12 @@ const currentlyBound = [null,null,null,null,null,null,null,null,null,null,null,n
 let currentUnit = 0
 function bindt(t){
 	const i = currentUnit|(!t.layers<<3)
-	const o = currentlyBound[i]
+	const b = i<8?GL.TEXTURE_2D_ARRAY:GL.TEXTURE_2D
+	let o = currentlyBound[i]
 	if(o) o.unit = -1
+	else if(o=currentlyBound[i^8]) o.unit=-1,gl.bindTexture(39419-b, currentlyBound[i^8]=null)
 	currentlyBound[i] = t
 	t.unit = currentUnit
-	const b = i<8?GL.TEXTURE_2D_ARRAY:GL.TEXTURE_2D
 	gl.bindTexture(b, t)
 	return b
 }
