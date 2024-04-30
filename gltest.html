@@ -1,0 +1,247 @@
+<canvas id="canvas" width="500" height="300"></canvas>
+<canvas id="canvas2" width="500" height="300"></canvas>
+<canvas id="canvas3" width="500" height="300"></canvas>
+<div id="result" style="white-space:pre-wrap;"></div>
+<style>
+	canvas{
+		user-select: none;
+		background-color: #bbb;
+		border: 2px #333 solid;
+	}
+</style>
+<script>
+	let renderGl = true, render2d = false, renderSurface = true
+	canvas.onclick = () => renderGl = !renderGl
+	canvas2.onclick = () => render2d = !render2d
+	canvas3.onclick = () => renderSurface = !renderSurface
+	const PCOUNT = 500_000
+	let gl = canvas.getContext('webgl2', {preserveDrawingBuffer: false, depth: false})
+	let gl2 = canvas3.getContext('webgl2', {preserveDrawingBuffer: false, depth: false})
+	const ctx = canvas2.getContext('2d')
+	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1)
+	gl2.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1)
+	const img1 = new Image(), img2 = new Image()
+	img1.src = './sample.png'
+	img2.src = './icon.png'
+	const tex1 = gl.createTexture(), tex2 = gl.createTexture()
+	let ctex1, ctex2
+	const stex1 = gl2.createTexture(), stex2 = gl2.createTexture()
+	stex1.i=stex2.i=-1
+	WebGL2RenderingContext.prototype.upload = function(tex, img){
+		// 35866
+		this.bindTexture(3553, tex)
+		this.texImage2D(3553, 0, gl.RGBA, /*img.width, img.height, 1, 0, */gl.RGBA, gl.UNSIGNED_BYTE, img)
+		//this.generateMipmap(3553)
+		this.texParameteri(3553, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+	}
+	Promise.all([new Promise(r => img1.onload = r), new Promise(r => img2.onload = r)]).then(async () => {
+		ctex1 = await createImageBitmap(img1, {imageOrientation: 'flipY'})
+		ctex2 = await createImageBitmap(img2, {imageOrientation: 'flipY'})
+		gl.upload(tex1, img1)
+		gl.upload(tex2, img2)
+		gl2.upload(stex1, img1)
+		gl2.upload(stex2, img2)
+		frame()
+	})
+	const p = gl.createProgram()
+	const vert = gl.createShader(gl.VERTEX_SHADER)
+	gl.shaderSource(vert, `#version 300 es
+in vec3 pos; out vec2 vtexcoord; uniform vec2 vw;
+void main(){
+	vtexcoord = vec2(gl_VertexID&1, gl_VertexID>>1);
+	float s = sin(pos.z), c = cos(pos.z);
+	vec2 off = (vtexcoord*16.-8.) * mat2(c,s,-s,c);
+	gl_Position = vec4((pos.xy+off)/vw*2.-1., 0., 1.);
+}`)
+	gl.compileShader(vert)
+	const frag = gl.createShader(gl.FRAGMENT_SHADER)
+	gl.shaderSource(frag, `#version 300 es
+	precision mediump float;
+	precision lowp sampler2DArray;
+in vec2 vtexcoord; out vec4 col; uniform sampler2D tex;
+void main(){
+	col = texture(tex, vtexcoord);
+}`)
+	gl.compileShader(frag)
+	gl.disable(gl.DEPTH_TEST)
+	gl.attachShader(p, vert)
+	gl.attachShader(p, frag)
+	gl.linkProgram(p)
+	gl.useProgram(p)
+	const uTex = gl.getUniformLocation(p, 'tex')
+	const uVw = gl.getUniformLocation(p, 'vw')
+	const buf = gl.createBuffer()
+	gl.bindBuffer(gl.ARRAY_BUFFER, buf)
+	gl.bufferData(gl.ARRAY_BUFFER, PCOUNT*12, gl.STREAM_DRAW)
+	const aPos = gl.getAttribLocation(p, 'pos')
+	gl.enableVertexAttribArray(aPos)
+	const f = new Float32Array(PCOUNT * 3), is = new Int32Array(PCOUNT)
+	function glDraw(){
+		gl.activeTexture(gl.TEXTURE0)
+		gl.bindTexture(3553, tex1)
+		gl.activeTexture(gl.TEXTURE1)
+		gl.bindTexture(3553, tex2)
+		gl.uniform2f(uVw, gl.canvas.width, gl.canvas.height)
+		let i = 0
+		let r = t+123
+		gl.enable(gl.BLEND)
+		gl.blendEquation(gl.FUNC_ADD)
+		gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+		for(const {x, y} of particles){
+			f[i] = x; f[i+1] = y
+			f[i+2] = r
+			i+=3; r *= .9999
+		}
+		gl.uniform1i(uTex, 0)
+		gl.bindBuffer(gl.ARRAY_BUFFER, buf)
+		gl.bufferData(gl.ARRAY_BUFFER, f, gl.STREAM_DRAW)
+		gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 0, 0)
+		gl.vertexAttribDivisor(aPos, 1)
+		gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, PCOUNT)
+	}
+	function ctxDraw(){
+		ctx.setTransform(1, 0, 0, -1, 0, ctx.canvas.height += 0)
+		let lastX = 0, lastY = 0
+		let r = t+123, i = 0
+		for(const {x, y} of particles){
+			ctx.translate(x - lastX, y - lastY); lastX = x; lastY = y
+			ctx.rotate(-r)
+			ctx.drawImage(i&1?ctex2:ctex1, -8, -8, 16, 16)
+			ctx.rotate(r)
+			r *= .9999; i++
+		}
+	}
+	const p2 = gl2.createProgram()
+	const vert2 = gl2.createShader(gl.VERTEX_SHADER)
+	gl2.shaderSource(vert2, `#version 300 es
+precision highp float;
+in vec4 pos; out highp vec4 uv; uniform vec2 vw;
+void main(){
+	uv = vec4(gl_VertexID&1, gl_VertexID>>1, 0., pos.w);
+	float s = sin(pos.z), c = cos(pos.z);
+	vec2 off = (uv.xy*16.-8.) * mat2(c,s,-s,c);
+	gl_Position = vec4((pos.xy+off)/vw*2.-1., 0., 1.);
+}`)
+	gl2.compileShader(vert2)
+	const frag2 = gl2.createShader(gl.FRAGMENT_SHADER)
+	gl2.shaderSource(frag2, `#version 300 es
+	precision highp float;
+in highp vec4 uv; out vec4 col;
+precision lowp sampler2DArray;
+uniform sampler2D tex[8];
+vec4 getColor(highp vec4 uv){
+	#define ret(x) return texture(tex[x], uv.xy)
+	int w = int(uv.w);
+	if(w<4){
+		if(w<2){
+			if(w<1) ret(0);
+			else ret(1);
+		}else if(w<3) ret(2);
+		else ret(3);
+	}else if(w<6){
+		if(w<5) ret(4);
+		else ret(5);
+	}else if(w<7) ret(6);
+	else ret(7);
+}
+void main(){
+	col = getColor(uv);
+}`)
+	gl2.compileShader(frag2)
+	gl2.disable(gl.DEPTH_TEST)
+	gl2.attachShader(p2, vert2)
+	gl2.attachShader(p2, frag2)
+	gl2.linkProgram(p2)
+	gl2.useProgram(p2)
+	for(let i = 0; i < 8; i++) gl2.uniform1i(gl2.getUniformLocation(p2, 'tex['+i+']'), i)
+	const uVw2 = gl2.getUniformLocation(p2, 'vw')
+	const aPos2 = gl2.getAttribLocation(p2, 'pos')
+	gl2.enableVertexAttribArray(aPos2)
+	const buf2 = gl2.createBuffer()
+	gl2.bindBuffer(gl.ARRAY_BUFFER, buf2)
+	gl2.vertexAttribPointer(aPos2, 4, gl.FLOAT, false, 0, 0)
+	gl2.vertexAttribDivisor(aPos2, 1)
+	let list = new Float32Array(32), listI = 0
+	const bound = [null,null,null,null,null,null,null,null]
+	let boundUsed = 0
+	function drawImg(a, x, y, r){
+		if(a.i<0){
+			a.i = 31-Math.clz32(boundUsed^(boundUsed+1))
+			if(a.i==8){
+				gl2.bufferData(gl.ARRAY_BUFFER, list.subarray(0, listI), gl.STREAM_DRAW)
+				gl2.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, listI>>2)
+				listI = 0; boundUsed = 0; a.i = 0
+			}
+			const o = bound[a.i]; if(o)o.i=-1
+			bound[a.i]=a
+			gl2.activeTexture(33984 + a.i)
+			gl2.bindTexture(3553, a)
+		}
+		boundUsed |= 1<<a.i
+		if(list.length==listI){
+			const ol = list
+			list = new Float32Array(list.length<<1)
+			list.set(ol)
+		}
+		list[listI] = x; list[listI|1] = y; list[listI|2] = r; list[listI|3] = a.i
+		listI += 4
+	}
+	function surfaceDraw(){
+		gl2.uniform2f(uVw2, 500, 300)
+		let r = t+123, i = 0
+		for(const {x, y} of particles){
+			drawImg(i&1?stex2:stex1, x, y, r)
+			r *= .9999; i++
+		}
+		if(listI){
+			gl2.bufferData(gl.ARRAY_BUFFER, list.subarray(0, listI), gl.STREAM_DRAW)
+			gl2.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, listI>>2)
+			listI = 0; boundUsed = 0
+		}
+	}
+	const particles = []
+	let t = 0, dt = 0
+	let POWDT = 1
+	class Particle{
+		#x = 0; #y = 0; #dx = Math.random() * 200; #dy = Math.random() * 100 + 50
+		step(){
+			if(this.#y < 0){
+				this.#x = 0
+				this.#y = 0
+				this.#dx = Math.random() * 200
+				this.#dy = Math.random() * 100 + 50
+			}
+			this.#x += (this.#dx *= POWDT) * dt
+			this.#y += (this.#dy -= 50*dt) * dt
+		}
+		get x(){return this.#x}
+		get y(){return this.#y}
+	}
+	for(let i = 0; i < PCOUNT; i++) particles.push(new Particle())
+	let dt1 = 0, dt2 = 0, dt0 = 0, dt3 = 0
+	function frame(){
+		requestAnimationFrame(frame)
+		dt = -(t-(t=performance.now()/1000))
+		POWDT = 0.667 ** dt
+		if(render2d|renderGl|renderSurface){
+			for(let i = 0; i < PCOUNT; i++) particles[i].step()
+			dt0 = performance.now() - t*1000
+		}
+		if(renderGl){
+			const a = performance.now()
+			glDraw()
+			dt1 = performance.now() - a
+		}
+		if(render2d){
+			const a = performance.now()
+			ctxDraw()
+			dt2 = performance.now() - a
+		}
+		if(renderSurface){
+			const a = performance.now()
+			surfaceDraw()
+			dt3 = performance.now() - a
+		}
+		result.textContent = 'physics: '+dt0.toFixed(1)+'ms\nwebgl2: '+dt1.toFixed(1)+'ms\ncanvas2d: '+dt2.toFixed(1)+'ms\ngamma: '+dt3.toFixed(1)+'ms\nparticles: '+particles.length.toLocaleString()
+	}
+</script>

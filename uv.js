@@ -177,7 +177,7 @@ class M{
 	}
 	sub(){ return new M(this.arr,this.#a,this.#b,this.#c,this.#d,this.#e,this.#f) }
 	resetTo(m){this.#a=m.#a;this.#b=m.#b;this.#c=m.#c;this.#d=m.#d;this.#e=m.#e;this.#f=m.#f}
-	add(fx = 0, t1=0, t2=0, t3=0, t4=0, {x:tx,y:ty,w:tw,h:th,l} = whole){
+	add({x:tx,y:ty,w:tw,h:th,l} = whole, fx = 0, t1=0, t2=0, t3=0, t4=0){
 		const j = (this.arr.i+=16)-16, cur = this.arr.cur
 		cur[j  ] = this.#a; cur[j+1] = this.#c; cur[j+2] = this.#e
 		cur[j+3] = this.#b; cur[j+4] = this.#d; cur[j+5] = this.#f
@@ -653,8 +653,8 @@ NS.Shader = src => {
 	const frag = gl.createShader(GL.FRAGMENT_SHADER)
 	gl.shaderSource(frag, `#version 300 es
 precision mediump float; precision highp int; precision highp usampler2D;
-precision mediump sampler2DArray; precision highp usampler2DArray;
-in vec3 uv; in vec2 pos,xy; flat in float effect; flat in vec4 tint; out vec4 color;
+precision lowp sampler2DArray; precision highp usampler2DArray;
+in vec3 uv; in vec2 pos,xy; flat in float effect; flat in vec4 tint; out lowp vec4 color;
 uniform sampler2D tex0, tex1, tex2, tex3, tex4, tex5, tex6, tex7;
 uniform usampler2D utex0, utex1, utex2, utex3, utex4, utex5, utex6, utex7;
 uniform sampler2DArray atex0, atex1, atex2, atex3, atex4, atex5, atex6, atex7;
@@ -666,7 +666,7 @@ uniform highp vec4 u; uniform highp uint s, t;
 	if(err){
 		console.warn('GLSL error:\n',err)
 		gl.shaderSource(frag, `#version 300 es
-precision mediump float;out vec4 c;void main(){c=vec4(0,0,0,1);}`)
+out lowp vec4 c;void main(){c=vec4(0,0,0,1);}`)
 		gl.compileShader(frag)
 	}
 	gl.attachShader(p, vert)

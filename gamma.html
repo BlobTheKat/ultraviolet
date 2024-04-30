@@ -1,0 +1,186 @@
+<canvas style="position:fixed;inset:0;width:100%;height:100%;background:#000"></canvas><script type="module">
+let T=document.body
+T.parentElement.style.overflow='hidden'
+T.replaceWith(T=T.firstChild)
+/** @type WebGL2RenderingContext */
+const gl = T.getContext('webgl2', {preserveDrawingBuffer: false, antialias: false, depth: false, premultipliedAlpha: true, stencil: true})
+const TEX2D = 3553
+gl.pixelStorei(37440,1) // unpack flip-y
+class img{
+	#src; #tex=null
+	constructor(src){ this.#src = src }
+	get src(){return this.#src}
+	set src(a){this.#src=a;if(this.#tex)this.unload()}
+	get loaded(){return!this.then}
+	then = this.#then
+	#then(cb){
+		if(this.#tex) return void cb(this)
+		this.#tex = gl.createTexture()
+		const img = new Image()
+		img.onload = img.onerror = _ => {
+			if(img.complete){
+				gl.bindTexture(TEX2D, this.#tex)
+				gl.texImage2D(TEX2D, 0, 6408, 6408, 5121, img) // Formats.RGBA, r=g=b=a=u8/255
+			}
+			this.then = null
+			cb(this)
+		}
+		img.src = this.src
+	}
+	unload(){
+		if(!this.#tex) return
+		gl.deleteTexture(this.#tex)
+		this.#tex = null
+	}
+}
+Object.assign(window,(globalThis.loader=({url})=>{
+	url = url.slice(0,url.lastIndexOf('/')+1)
+	return {
+		Img: src => new img(src[0]=='/'?src:url+src),
+		Can: (w,h) => {
+			const arr=new Float32Array(16); arr.i=0; arr.iarr = null
+			return new can(arr)
+		}
+	}
+})({url:location.pathname}))
+requestAnimationFrame(function f(){
+	requestAnimationFrame(f)
+	gl.canvas.width = innerWidth*devicePixelRatio
+	gl.canvas.height = innerHeight*devicePixelRatio
+})
+
+class can{
+	arr;#a;#b;#c;#d;#e;#f;#shader
+	constructor(z,a=1,b=0,c=0,d=1,e=0,f=0,s){this.arr=z;this.#a=a;this.#b=b;this.#c=c;this.#d=d;this.#e=e;this.#f=f;this.#shader=s}
+	translate(x=0,y=0){ this.#e+=x*this.#a+y*this.#c;this.#f+=x*this.#b+y*this.#d }
+	scale(x=1,y=x){ this.#a*=x; this.#b*=x; this.#c*=y; this.#d*=y }
+	rotate(r=0){
+		const cs = Math.cos(r), sn = Math.sin(r), a=this.#a,b=this.#b,c=this.#c,d=this.#d
+		this.#a=a*cs-c*sn; this.#b=b*cs-d*sn
+		this.#c=a*sn+b*cs; this.#d=b*sn+d*cs
+	}
+	transform(a,b,c,d,e,f){
+		const ta=this.#a,tb=this.#b,tc=this.#c,td=this.#d,te=this.#e,tf=this.#f
+		this.#a = a*ta+c*tb; this.#b = b*ta+d*tb
+		this.#c = a*tc+c*td; this.#d = b*tc+d*td
+		this.#e = a*te+c*tf+e; this.#f = b*te+d*tf+f
+	}
+	skew(x=0, y=0){
+		const ta=this.#a,tb=this.#b
+		this.#a+=this.#c*y; this.#b+=this.#d*y
+		this.#c+=ta*x; this.#d+=tb*x
+	}
+	multiply(x=1, y=0){
+		const ta=this.#a,tc=this.#c
+		this.#a=ta*x-this.#b*y;this.#b=ta*y+this.#b*x
+		this.#c=tc*x-this.#d*y;this.#d=tc*y+this.#d*x
+	}
+	getTransform(){ return {a: this.#a, b: this.#b, c: this.#c, d: this.#d, e: this.#e, f: this.#f} }
+	new(a=1,b=0,c=0,d=1,e=0,f=0){return new M(this.arr,a,b,c,d,e,f,this.#shader)}
+	reset(a=1,b=0,c=0,d=1,e=0,f=0){this.#a=a;this.#b=b;this.#c=c;this.#d=d;this.#e=e;this.#f=f}
+	box(x=0,y=0,w=1,h=w){ this.#e+=x*this.#a+y*this.#c; this.#f+=x*this.#b+y*this.#d; this.#a*=w; this.#b*=w; this.#c*=h; this.#d*=h }
+	to(x, y){if(typeof x=='object')({x,y}=x);return {x:this.#a*x+this.#c*y+this.#e,y:this.#b*x+this.#d*y+this.#f}}
+	from(x, y){
+		if(typeof x=='object')({x,y}=x)
+		const a=this.#a,b=this.#b,c=this.#c,d=this.#d, det = a*d - b*c
+		return {
+			x: (x*d - x*c + c*this.#f - d*this.#e)/det,
+			y: (y*a - y*b + b*this.#e - a*this.#f)/det
+		}
+	}
+	sub(){ return new M(this.arr,this.#a,this.#b,this.#c,this.#d,this.#e,this.#f,this.#shader) }
+	resetTo(m){this.#a=m.#a;this.#b=m.#b;this.#c=m.#c;this.#d=m.#d;this.#e=m.#e;this.#f=m.#f;this.setShader(m.#shader)}
+	setShader(sh){
+		if(this.arr.i) draw(this.arr,this.#shader.program)
+		this.#shader = sh
+	}
+	draw(values){
+		const i = this.#shader(values), arr = this.arr
+		arr[i  ] = this.#a; arr[i+1] = this.#c; arr[i+2] = this.#e
+		arr[i+3] = this.#b; arr[i+4] = this.#d; arr[i+5] = this.#f
+	}
+	drawRect(values, x=0, y=0, w=1, h=1){
+		const i = this.#shader(values), arr = this.arr
+		arr[i  ] = this.#a*w; arr[i+1] = this.#c*h; arr[i+2] = this.#e+x*this.#a+y*this.#c
+		arr[i+3] = this.#b*w; arr[i+4] = this.#d*h; arr[i+5] = this.#f+x*this.#b+y*this.#d
+	}
+	drawMat(values, a=1, b=0, c=0, d=1, e=0, f=0){
+		const i = this.#shader(values), arr = this.arr
+		const ta=this.#a,tb=this.#b,tc=this.#c,td=this.#d,te=this.#e,tf=this.#f
+		arr[i  ] = a*ta+c*tb; arr[i+1] = a*tc+c*td; arr[i+2] = a*te+c*tf+e
+		arr[i+3] = b*ta+d*tb; arr[i+4] = b*tc+d*td; arr[i+5] = b*te+d*tf+f
+	}
+}
+const attribTypes = Object.setPrototypeOf({
+	float: 0, vec2: 1, vec3: 2, vec4: 3,
+	int: 16, ivec2: 17, ivec3: 18, ivec4: 19,
+	uint: 32, uvec2: 33, uvec3: 34, uvec4: 35,
+	texture: 20, utexture: 24, color: 4, ucolor: 8
+}, null)
+let gtArr = null, maxLen=0
+let prog = null
+function draw(arr, p){
+	buf.bufferData(34962, arr = arr.subarray(0, arr.i), 35040)
+	if(p.program != prog){
+		gl.useProgram(prog = p.program)
+		gl.bindVertexArray(p.vao)
+	}
+	gl.drawArraysInstanced(5, 0, 4, arr.length/p.count)
+}
+const buf = gl.createBuffer()
+gl.bindBuffer(34962, buf)
+const maxTex = gl.getParameter(34930), maxUnits = Math.max(maxTex+16, gl.getParameter(35661))-1
+const HEAD = '#version 300 es\nprecision mediump float;precision highp int;out lowp vec4 color;uniform struct{mediump sampler2DArray u;highp usampler2DArray au;} GL_['+maxTex+'];uvec4 GL_u(vec4 v){}vec4 GL_f(vec4 v){}'
+globalThis.Shader = (inputs, src) => {
+	const fnParams = ['(function({'], fnBody = [''], shaderHead = ['#version 300 es\nin mat2x3 m;'], shaderBody = ['void main(){'], shaderHead2 = [HEAD]
+	let i = 6, ints = false, texCount = 0
+	const types = [3,3]
+	for(const k in inputs||{}){
+		if(!/(?![0-9]|(u?int|float|[iu]?vec[234]|[iu]?mat[234](x[234])?|lowp|mediump|highp|struct|const|void|in|out|inout|if|else|for|while|do|switch|case|default|return|discard|break|continue|u?color|u?texture)$|gl_|__|GL_)[a-zA-Z_0-9]+/y.test(k)) throw 'Invalid parameter name: '+k
+		const n = inputs[k]
+		const t = attribTypes[n]; let c = (t&3)+1
+		if(typeof t != 'number') throw 'Invalid type: '+n
+		fnParams.push(k+':'+(c==1?'a'+i:'{x:a'+i+',y:a'+(i+1)+(c==3?',z:a'+(i+2):c==4?',z:a'+(i+2)+',w:a'+(i+3):'')+'}')+',')
+		const A = t>15?(ints=true,'iarr[i+'):'arr[i+'
+		shaderHead.push('in '+n+' a'+i+';flat out '+n+' '+k+';')
+		shaderBody.push(k+'=a'+i+';')
+		shaderHead2.push('flat in '+n+' '+k+';')
+		types.push(c|(t>15)<<3)
+		while(c--) fnBody.push(A+i+']=a'+i), i++
+	}
+	if(texCount>8) throw 'Shaders cannot use more than 8 textures/colors'
+	fnBody[0] = '}){let arr=this.arr,{i'+(ints?',iarr':'')+'}=arr;if((arr.i=i+'+i+')>arr.length)'+(ArrayBuffer.prototype.transfer?'{arr=new Float32Array(arr.buffer.transfer(arr.i*8))}':'{const a2=gtArr||new Float32Array((arr.i)*2);a2.set(arr,0);arr=a2;}')
+	if(i==6) fnParams[0]=fnParams[0].slice(0,-1), fnBody[0]=fnBody[0].slice(1)
+	fnBody.push('return i})')
+	const s = eval(fnParams.join('')+fnBody.join(';')), p = s.program = gl.createProgram()
+	const v=gl.createShader(35633), f=gl.createShader(35632)
+	shaderBody.push('}')
+	gl.shaderSource(v, shaderHead.join('')+shaderBody.join(''))
+	gl.compileShader(v)
+	gl.shaderSource(f, shaderHead2.join('')+src)
+	gl.compileShader(f)
+	if(T=gl.getShaderInfoLog(f)) console.warn('GLSL Error:\n'+T)
+	gl.linkProgram(p)
+	gl.useProgram(p)
+	for(let i = 0; i < maxTex; i++){
+		gl.uniform1i(gl.getUniformLocation('GL_['+i+'].f'), maxUnits)
+		gl.uniform1i(gl.getUniformLocation('GL_['+i+'].u'), maxUnits)
+		gl.uniform1i(gl.getUniformLocation('GL_['+i+'].af'), maxUnits)
+		gl.uniform1i(gl.getUniformLocation('GL_['+i+'].au'), maxUnits)
+	}
+	s.lastU = 0
+	gl.useProgram(prog)
+	s.count = i
+	gl.bindVertexArray(s.vao = gl.createVertexArray())
+	let j = 0, j2 = 0
+	for(const t of types){
+		if(t>>2) gl.vertexAttribIPointer(j, t&7, 5124, !1, i<<2, j2)
+		else gl.vertexAttribPointer(j, t&7, 5126, !1, i<<2, j2)
+		gl.vertexAttribDivisor(j++, 1)
+		j2 += (t&7)<<2
+	}
+	return s
+}
+globalThis.gl=gl
+await import('./index.js')
+</script>
