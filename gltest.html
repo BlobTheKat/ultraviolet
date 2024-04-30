@@ -10,11 +10,11 @@
 	}
 </style>
 <script>
-	let renderGl = true, render2d = false, renderSurface = true
+	let renderGl = false, render2d = false, renderSurface = true
 	canvas.onclick = () => renderGl = !renderGl
 	canvas2.onclick = () => render2d = !render2d
 	canvas3.onclick = () => renderSurface = !renderSurface
-	const PCOUNT = 500_000
+	const PCOUNT = 200_000
 	let gl = canvas.getContext('webgl2', {preserveDrawingBuffer: false, depth: false})
 	let gl2 = canvas3.getContext('webgl2', {preserveDrawingBuffer: false, depth: false})
 	const ctx = canvas2.getContext('2d')
@@ -27,20 +27,21 @@
 	let ctex1, ctex2
 	const stex1 = gl2.createTexture(), stex2 = gl2.createTexture()
 	stex1.i=stex2.i=-1
-	WebGL2RenderingContext.prototype.upload = function(tex, img){
+	WebGL2RenderingContext.prototype.upload = function(tex, img, f=gl.RGBA, i=gl.RGBA, t=gl.UNSIGNED_BYTE, mag=gl.NEAREST){
 		// 35866
 		this.bindTexture(3553, tex)
-		this.texImage2D(3553, 0, gl.RGBA, /*img.width, img.height, 1, 0, */gl.RGBA, gl.UNSIGNED_BYTE, img)
+		this.texImage2D(3553, 0, f, /*img.width, img.height, 1, 0, */i, t, img)
 		//this.generateMipmap(3553)
-		this.texParameteri(3553, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+		this.texParameteri(3553, gl.TEXTURE_MIN_FILTER, mag)
+		this.texParameteri(3553, gl.TEXTURE_MAG_FILTER, mag)
 	}
 	Promise.all([new Promise(r => img1.onload = r), new Promise(r => img2.onload = r)]).then(async () => {
 		ctex1 = await createImageBitmap(img1, {imageOrientation: 'flipY'})
 		ctex2 = await createImageBitmap(img2, {imageOrientation: 'flipY'})
-		gl.upload(tex1, img1)
+		gl.upload(tex1, img2)
 		gl.upload(tex2, img2)
-		gl2.upload(stex1, img1)
-		gl2.upload(stex2, img2)
+		gl2.upload(stex1, img2)//gl.RGBA8UI, gl.RGBA_INTEGER, gl.UNSIGNED_BYTE, gl.NEAREST)
+		gl2.upload(stex2, img2)//gl.RGBA8UI, gl.RGBA_INTEGER, gl.UNSIGNED_BYTE, gl.NEAREST)
 		frame()
 	})
 	const p = gl.createProgram()
@@ -130,6 +131,7 @@ in highp vec4 uv; out vec4 col;
 precision lowp sampler2DArray;
 uniform sampler2D tex[8];
 vec4 getColor(highp vec4 uv){
+	//return vec4(0,0,0,1);
 	#define ret(x) return texture(tex[x], uv.xy)
 	int w = int(uv.w);
 	if(w<4){
@@ -148,6 +150,7 @@ void main(){
 	col = getColor(uv);
 }`)
 	gl2.compileShader(frag2)
+	console.log(gl2.getShaderInfoLog(frag2))
 	gl2.disable(gl.DEPTH_TEST)
 	gl2.attachShader(p2, vert2)
 	gl2.attachShader(p2, frag2)
@@ -186,7 +189,14 @@ void main(){
 		list[listI] = x; list[listI|1] = y; list[listI|2] = r; list[listI|3] = a.i
 		listI += 4
 	}
+	const q = gl2.createQuery()
+	const {TIME_ELAPSED_EXT=0} = gl2.getExtension('EXT_disjoint_timer_query_webgl2')??0
+	let drawTime = -1
 	function surfaceDraw(){
+		if(TIME_ELAPSED_EXT && gl2.getQueryParameter(q, gl.QUERY_RESULT_AVAILABLE)){
+			drawTime = gl2.getQueryParameter(q, gl.QUERY_RESULT)/1000000
+			gl2.beginQuery(TIME_ELAPSED_EXT, q)
+		}else if(TIME_ELAPSED_EXT && drawTime < 0) gl2.beginQuery(TIME_ELAPSED_EXT, q),drawTime=0
 		gl2.uniform2f(uVw2, 500, 300)
 		let r = t+123, i = 0
 		for(const {x, y} of particles){
@@ -198,6 +208,7 @@ void main(){
 			gl2.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, listI>>2)
 			listI = 0; boundUsed = 0
 		}
+		if(TIME_ELAPSED_EXT) gl2.endQuery(TIME_ELAPSED_EXT)
 	}
 	const particles = []
 	let t = 0, dt = 0
@@ -242,6 +253,6 @@ void main(){
 			surfaceDraw()
 			dt3 = performance.now() - a
 		}
-		result.textContent = 'physics: '+dt0.toFixed(1)+'ms\nwebgl2: '+dt1.toFixed(1)+'ms\ncanvas2d: '+dt2.toFixed(1)+'ms\ngamma: '+dt3.toFixed(1)+'ms\nparticles: '+particles.length.toLocaleString()
+		result.textContent = 'physics: '+dt0.toFixed(1)+'ms\nwebgl2: '+dt1.toFixed(1)+'ms\ncanvas2d: '+dt2.toFixed(1)+'ms\ngamma: '+dt3.toFixed(1)+'ms'+(drawTime>=0?'/'+drawTime.toFixed(3)+'ms':'')+'\nparticles: '+particles.length.toLocaleString()
 	}
 </script>

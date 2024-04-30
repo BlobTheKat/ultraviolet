@@ -130,7 +130,7 @@ function draw(arr, p){
 const buf = gl.createBuffer()
 gl.bindBuffer(34962, buf)
 const maxTex = gl.getParameter(34930), maxUnits = Math.max(maxTex+16, gl.getParameter(35661))-1
-const HEAD = '#version 300 es\nprecision mediump float;precision highp int;out lowp vec4 color;uniform struct{mediump sampler2DArray u;highp usampler2DArray au;} GL_['+maxTex+'];uvec4 GL_u(vec4 v){}vec4 GL_f(vec4 v){}'
+const HEAD = '#version 300 es\nprecision mediump float;precision highp int;out lowp vec4 color;uniform mediump sampler2DArray GL_s['+maxTex+'];uniform highp usampler2DArray GL_i['+maxTex+'];uvec4 GL_u(highp vec4 v){if(v.w<)}vec4 GL_f(vec4 v){}'
 globalThis.Shader = (inputs, src) => {
 	const fnParams = ['(function({'], fnBody = [''], shaderHead = ['#version 300 es\nin mat2x3 m;'], shaderBody = ['void main(){'], shaderHead2 = [HEAD]
 	let i = 6, ints = false, texCount = 0
@@ -163,10 +163,8 @@ globalThis.Shader = (inputs, src) => {
 	gl.linkProgram(p)
 	gl.useProgram(p)
 	for(let i = 0; i < maxTex; i++){
-		gl.uniform1i(gl.getUniformLocation('GL_['+i+'].f'), maxUnits)
-		gl.uniform1i(gl.getUniformLocation('GL_['+i+'].u'), maxUnits)
-		gl.uniform1i(gl.getUniformLocation('GL_['+i+'].af'), maxUnits)
-		gl.uniform1i(gl.getUniformLocation('GL_['+i+'].au'), maxUnits)
+		gl.uniform1i(gl.getUniformLocation(p, 'GL_['+i+'].f'), maxUnits)
+		gl.uniform1i(gl.getUniformLocation(p, 'GL_['+i+'].u'), maxUnits)
 	}
 	s.lastU = 0
 	gl.useProgram(prog)
