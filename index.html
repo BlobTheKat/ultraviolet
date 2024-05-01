@@ -292,10 +292,9 @@ ctx.draw(mesh, flowerTex, RGBA, Blend.REPLACE)
 ctx.setU(1, 2, 3, 4) // accessible as `uniform vec4 u;` in shader
 ctx.setST(5, 6) // accessible as `uniform float s, t;` in shader
 
-// Textures available as tex0,tex1,...,tex7 in shader
-// Access integer textures with utex0...utex7 & array textures with atex0...atex7
+// Textures available as tex0,tex1,...,tex15 in shader
 // If your shader uses a specific type make sure to pass the correct one in .draw()!
-ctx.draw(mesh, [tex0, tex1, tex2, tex3, tex4, tex5, tex6, tex7])
+ctx.draw(mesh, [tex0, tex1, tex2, tex3, ...])
 </code-area><br>
 Thank you for coming to my TED talk.
 
@@ -333,7 +332,7 @@ Thank you for coming to my TED talk.
 		<m>Target</m>(texture: <t refto="texture">Texture</t>, layer?: <t>int</t>, stencil?: <t>boolean</t>) -> <t refto="target">Target</t></k>
 		<hr>
 		Construct a new shader from GLSL source code. See <b refto="shaders">its section</b> for more information.
-		<k><m>Shader</m>(glslSource: <t>string</t>) -> <t refto="shaders">Shader</t></k>
+		<k><m>Shader</m>(glslSource: <t>string</t>, textureTypes: <t>Array</t>&lt;<d>FIXED</d>? | <d>FLOAT</d>? | <d>UINT</d>? | <d>LAYERED</d>?>, outputType: <d>FIXED</d>? | <d>FLOAT</d>? | <d>UINT</d>?) -> <t refto="shaders">Shader</t></k>
 		<hr>
 		Represent a uv (A uv is a location within a texture, think a crop rectangle for a texture). See <b refto="uv">its section</b> for more information.
 		<k><m>uv</m>(x?: <t>number</t>, y?: <t>number</t>, w?: <t>number</t>, h?: <t>number</t>, layer?: <t>number</t>) -> <t refto="uv">UV</t></k>
@@ -357,7 +356,7 @@ Thank you for coming to my TED talk.
 			&nbsp;&nbsp;<d>RGB565</d>, <d>RGB5_A1</d>, <d>RGB10_A2</d>,<br>
 			&nbsp;&nbsp;<d>RGBA4</d>, <d>R11F_G11F_B10F</d>, <d>RGB9_E5</d>,<br>
 			&nbsp;&nbsp;<o>// Integer 8, 16 and 32 bit textures<br>
-			&nbsp;&nbsp;Must be referenced with utex0,...,utex7 in shader source code</o><br>
+			&nbsp;&nbsp;// UINT or UINT|ARRAY must be used in the array passed to Shader's textureTypes parameter</o><br>
 			&nbsp;&nbsp;<d>R8</d>, <d>RG8</d>, <d>RGB8</d>, <d>RGBA8</d>,<br>
 			&nbsp;&nbsp;<d>R16</d>, <d>RG16</d>, <d>RGB16</d>, <d>RGBA16</d>,<br>
 			&nbsp;&nbsp;<d>R32</d>, <d>RG32</d>, <d>RGB32</d>, <d>RGBA32</d>,<br>
@@ -618,7 +617,7 @@ Thank you for coming to my TED talk.
 	<div id="shader">
 		Create a shader. Do not use <c>new</c>.<br>
 		When this shader is in use, the <c>main()</c> GLSL function will be invoked for every drawn pixel. It must write a color value to <c>color</c>, or execute <c>discard;</c> to indicate that the pixel is to be abandoned and nothing is to be drawn. Do not put a version header or uniforms inside your shader source, they are added for you by the library
-		<k><n>constructor</n>(glslSource: <t>string</t>) -> <t>Shader</t></k>
+		<k><n>constructor</n>(glslSource: <t>string</t>, textureTypes: <t>Array</t>&lt;<d>FIXED</d>? | <d>FLOAT</d>? | <d>UINT</d>? | <d>LAYERED</d>?>, outputType: <d>FIXED</d>? | <d>FLOAT</d>? | <d>UINT</d>?) -> <t>Shader</t></k>
 		<hr>
 		Example of a valid shader:<br>(this is the default shader)
 		<k><n>void</n> main(){<br>
@@ -630,17 +629,14 @@ Thank you for coming to my TED talk.
 		<k>
 			<n>uniform vec4</n> u;<br>
 			<n>uniform float</n> s, t;<br>
-			<n>uniform sampler2D</n> tex0, tex1, ..., tex7;
-			<n>uniform sampler2DArray</n> atex0, atex1, ..., atex7;
-			<n>uniform usampler2D</n> utex0, utex1, ..., utex7;
-			<n>uniform usampler2DArray</n> uatex0, uatex1, ..., uatex7;
+			<n>uniform</n> (<n>sampler2D</n> | <n>usampler2D</n> | <n>sampler2DArray</n> | <n>usampler2DArray</n>)</n> tex0, tex1, ..., tex15;
 			<n>in vec3</n> uv;<br>
 			<n>in vec2</n> pos, xy;<br>
 			<n>in float</n> effect;<br>
 			<n>in vec4</n> tint;<br>
 			<n>out vec4</n> color;<br>
 		</k><br>
-		Only one of <c>tex0, utex0, atex0, uatex0</c> may be used in a single shader. The same applies for <c>tex1, utex1, atex1, uatex1</c>, ..., <c>tex7, utex7, atex7, uatex7</c>.<br>
+		The types and precisions of <c>tex0, tex1, tex2, ...</c> are determined by the values passed to <c>textureTypes</c><br>
 		<c>pos</c> represents the coordinate inside the sprite, where <c>(0, 0)</c> is always the bottom-left of the sprite and <c>(1, 1)</c> is always the top-right<br>
 		<c>xy</c> represents the mesh-space coordinates of the current pixel<br>
 		<c>uv</c> corresponds to the <c>uv</c> value supplied to <c refto="mesh">SpiteParams</c><br>

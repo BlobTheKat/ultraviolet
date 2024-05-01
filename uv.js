@@ -31,14 +31,14 @@ NS.Texture = (w=0,h=0,l=0,format=NS.Formats.RGBA,options=defaultOptions) => {
 	return t
 }
 NS.Texture.setDefaultOptions = o => defaultOptions = o
-const currentlyBound = [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]
+const currentlyBound = new Array(32).fill(null)
 let currentUnit = 0
 function bindt(t){
-	const i = currentUnit|(!t.layers<<3)
-	const b = i<8?GL.TEXTURE_2D_ARRAY:GL.TEXTURE_2D
+	const i = currentUnit|(!t.layers<<4)
+	const b = i<16?GL.TEXTURE_2D_ARRAY:GL.TEXTURE_2D
 	let o = currentlyBound[i]
 	if(o) o.unit = -1
-	else if(o=currentlyBound[i^8]) o.unit=-1,gl.bindTexture(39419-b, currentlyBound[i^8]=null)
+	else if(o=currentlyBound[i^16]) o.unit=-1,gl.bindTexture(39419-b, currentlyBound[i^16]=null)
 	currentlyBound[i] = t
 	t.unit = currentUnit
 	gl.bindTexture(b, t)
@@ -114,7 +114,15 @@ const TEX_PROTO = class{
 		this.mipmap|=1
 	}
 	uv(x=0,y=0,w=this.width,h=this.height,l=0){ return {x:x/this.width,y:(1-y+h)/this.height,w:w/this.width,h:h/this.height,l,sub} }
-	delete(){ gl.deleteTexture(this) }
+	delete(){
+		gl.deleteTexture(this)
+		if(this.u){
+			if(this.u!=currentUnit) gl.activeTexture(33984+(currentUnit=this.u))
+			const u=currentUnit|(!this.layers<<4)
+			this.u=-1
+			gl.bindTexture(u<16?35866:3553,currentlyBound[u]=null)
+		}
+	}
 }.prototype
 const fpool = []
 NS.Mesh = () => {
@@ -449,7 +457,7 @@ class Target{
 		pmask = mask
 		let tt = this.fb?.texture
 		if(Array.isArray(textures)){
-			if(textures.length < this.p.tunis.length || textures.length>8) return void((warns&4)&&(warns&=-5,console.warn('.draw(): Shader expects '+this.p.tunis.length+' texture(s)')))
+			if(textures.length < this.p.tunis.length || textures.length>16) return void((warns&4)&&(warns&=-5,console.warn('.draw(): Shader expects '+this.p.tunis.length+' texture(s)')))
 			let av = 255
 			for(let i = 0; i < textures.length; i++){
 				const t = textures[i]
@@ -611,7 +619,8 @@ Object.assign(NS, {
 
 	UPSCALE_PIXELATED: 1, DOWNSCALE_PIXELATED: 2, DOWNSCALE_MIPMAP_NEAREST: 4,
 	PIXELATED: 7, MIPMAPS: 8,
-	REPEAT: 80, REPEAT_MIRRORED: 160, REPEAT_X: 16, REPEAT_MIRRORED_X: 32, REPEAT_Y: 64, REPEAT_MIRRORED_Y: 128
+	REPEAT: 80, REPEAT_MIRRORED: 160, REPEAT_X: 16, REPEAT_MIRRORED_X: 32, REPEAT_Y: 64, REPEAT_MIRRORED_Y: 128,
+	FIXED:0,FLOAT:1,UINT:2,LAYERED:4
 })
 NS.Blend = (src = 17, combine = 17, dst = 0) => src|dst<<8|combine<<16
 NS.Blend.REPLACE = 1114129
@@ -648,18 +657,18 @@ NS.Target = (w = 0, h = 0, format = NS.Formats.RGBA, stencil = true) => {
 	}
 	return new Target(t, defaultProgram)
 }
-NS.Shader = src => {
+NS.Shader = (src, t=[], w=0) => {
 	const p = gl.createProgram()
+	let us='',pr = -1
+	for(let i=0;i<16;i++){
+		const type = t[i]||0
+		if(type==pr)us+=',tex'+i
+		else pr=type, us+=';uniform '+(type&3?type&2?'highp u':'highp ':'lowp ')+'sampler2D'+(type&4?'Array tex':' tex')+i
+	}
 	const frag = gl.createShader(GL.FRAGMENT_SHADER)
 	gl.shaderSource(frag, `#version 300 es
-precision mediump float; precision highp int; precision highp usampler2D;
-precision lowp sampler2DArray; precision highp usampler2DArray;
-in vec3 uv; in vec2 pos,xy; flat in float effect; flat in vec4 tint; out lowp vec4 color;
-uniform sampler2D tex0, tex1, tex2, tex3, tex4, tex5, tex6, tex7;
-uniform usampler2D utex0, utex1, utex2, utex3, utex4, utex5, utex6, utex7;
-uniform sampler2DArray atex0, atex1, atex2, atex3, atex4, atex5, atex6, atex7;
-uniform usampler2DArray uatex0, uatex1, uatex2, uatex3, uatex4, uatex5, uatex6, uatex7;
-uniform highp vec4 u; uniform highp uint s, t;
+precision mediump float; precision highp int;
+in vec3 uv; in vec2 pos,xy; flat in float effect; flat in vec4 tint; out ${w?w>1?'u':'highp ':'lowp '}vec4 color${us};uniform highp vec4 u; uniform highp uint s, t;
 `+src)
 	gl.compileShader(frag)
 	const err = gl.getShaderInfoLog(frag)
@@ -676,7 +685,7 @@ out lowp vec4 c;void main(){c=vec4(0,0,0,1);}`)
 	p.uni1 = gl.getUniformLocation(p, 'u')
 	p.uni2 = gl.getUniformLocation(p, 's')
 	p.uni3 = gl.getUniformLocation(p, 't')
-	p.tunis = Array.from({length:8},(_,i) => gl.getUniformLocation(p,'tex'+i) || gl.getUniformLocation(p,'utex'+i) || gl.getUniformLocation(p,'atex'+i) || gl.getUniformLocation(p,'uatex'+i))
+	p.tunis = Array.from({length:16},(_,i) => gl.getUniformLocation(p,'tex'+i))
 	while(p.tunis.length&&!p.tunis[p.tunis.length-1]) p.tunis.pop()
 	return p
 }

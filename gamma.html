@@ -131,7 +131,7 @@ const buf = gl.createBuffer()
 gl.bindBuffer(34962, buf)
 const maxTex = gl.getParameter(34930), maxUnits = Math.max(maxTex+16, gl.getParameter(35661))-1
 const HEAD = '#version 300 es\nprecision mediump float;precision highp int;out lowp vec4 color;uniform mediump sampler2DArray GL_s['+maxTex+'];uniform highp usampler2DArray GL_i['+maxTex+'];uvec4 GL_u(highp vec4 v){if(v.w<)}vec4 GL_f(vec4 v){}'
-globalThis.Shader = (inputs, src) => {
+globalThis.Shader = (inputs, src, ftexNew = 0, itexNew = 0) => {
 	const fnParams = ['(function({'], fnBody = [''], shaderHead = ['#version 300 es\nin mat2x3 m;'], shaderBody = ['void main(){'], shaderHead2 = [HEAD]
 	let i = 6, ints = false, texCount = 0
 	const types = [3,3]
@@ -148,7 +148,7 @@ globalThis.Shader = (inputs, src) => {
 		types.push(c|(t>15)<<3)
 		while(c--) fnBody.push(A+i+']=a'+i), i++
 	}
-	if(texCount>8) throw 'Shaders cannot use more than 8 textures/colors'
+	if(texCount>16) throw 'Shaders cannot use more than 16 textures/colors'
 	fnBody[0] = '}){let arr=this.arr,{i'+(ints?',iarr':'')+'}=arr;if((arr.i=i+'+i+')>arr.length)'+(ArrayBuffer.prototype.transfer?'{arr=new Float32Array(arr.buffer.transfer(arr.i*8))}':'{const a2=gtArr||new Float32Array((arr.i)*2);a2.set(arr,0);arr=a2;}')
 	if(i==6) fnParams[0]=fnParams[0].slice(0,-1), fnBody[0]=fnBody[0].slice(1)
 	fnBody.push('return i})')
