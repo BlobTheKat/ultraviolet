@@ -21,4 +21,5 @@ export function frame(){
 	ctx.scale(S/ctx.width,S/ctx.height)
 	ctx.rotate(t/2)
 	ctx.drawRect(cat, -1, -1, 2, 2)
+	ctx.clear(1,NaN,NaN,1)
 }

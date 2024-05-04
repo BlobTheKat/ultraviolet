@@ -396,14 +396,12 @@ class Target{
 		gl.clearColor(r, g, b, a)
 		pmask = (pmask&240)|(r==r)|(g==g)<<1|(b==b)<<2|(a==a)<<3
 		gl.colorMask(pmask&1,pmask&2,pmask&4,pmask&8)
-		let mask = GL.COLOR_BUFFER_BIT
-		if(this.fb) if(++this.fb.stencil>=8) this.fb.stencil=0,mask|=GL.STENCIL_BUFFER_BIT
-		else if(++mainStencil>=8) mainStencil=0,mask|=GL.STENCIL_BUFFER_BIT
-		gl.stencilMask(1<<(this.fb?this.fb.stencil:mainStencil))
+		const q = this.fb?this.fb.stencil=(this.fb.stencil+1)&7:mainStencil=(mainStencil+1)&7
 		if(fb!=this.fb) gl.bindFramebuffer(GL.FRAMEBUFFER, fb = this.fb)
 		const W = (fb||gl.canvas).width, H = (fb||gl.canvas).height
 		if(!W|!H) return; if(vpw!=W||vph!=H) gl.viewport(0,0,vpw=W,vph=H)
-		gl.clear(mask)
+		gl.clear(GL.COLOR_BUFFER_BIT | (q?0:(gl.stencilMask(255),GL.STENCIL_BUFFER_BIT)))
+		gl.stencilMask(1<<q)
 	}
 	clearColor(r = 0, g = 0, b = 0, a = 0){
 		gl.clearColor(r, g, b, a)
@@ -417,11 +415,14 @@ class Target{
 	clearStencil(){
 		const a = this.fb?this.fb.stencil=(this.fb.stencil+1)&7:mainStencil=(mainStencil+1)&7
 		gl.stencilMask(1<<a)
-		if(a) return
-		const W = (fb||gl.canvas).width, H = (fb||gl.canvas).height
-		if(!W|!H) return; if(vpw!=W||vph!=H) gl.viewport(0,0,vpw=W,vph=H)
-		if(fb!=this.fb) gl.bindFramebuffer(GL.FRAMEBUFFER, fb = this.fb)
-		gl.clear(GL.STENCIL_BUFFER_BIT)
+		if(!a){
+			const W = (fb||gl.canvas).width, H = (fb||gl.canvas).height
+			if(!W|!H) return; if(vpw!=W||vph!=H) gl.viewport(0,0,vpw=W,vph=H)
+			if(fb!=this.fb) gl.bindFramebuffer(GL.FRAMEBUFFER, fb = this.fb)
+			gl.stencilMask(255)
+			gl.clear(GL.STENCIL_BUFFER_BIT)
+		}
+		gl.stencilMask(1<<a)
 	}
 	draw(buf, textures, mask = 15, blend = 1135889, size=Infinity){
 		if(fb!=this.fb) gl.bindFramebuffer(GL.FRAMEBUFFER, fb = this.fb)
