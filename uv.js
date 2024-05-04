@@ -401,6 +401,8 @@ class Target{
 		else if(++mainStencil>=8) mainStencil=0,mask|=GL.STENCIL_BUFFER_BIT
 		gl.stencilMask(1<<(this.fb?this.fb.stencil:mainStencil))
 		if(fb!=this.fb) gl.bindFramebuffer(GL.FRAMEBUFFER, fb = this.fb)
+		const W = (fb||gl.canvas).width, H = (fb||gl.canvas).height
+		if(!W|!H) return; if(vpw!=W||vph!=H) gl.viewport(0,0,vpw=W,vph=H)
 		gl.clear(mask)
 	}
 	clearColor(r = 0, g = 0, b = 0, a = 0){
@@ -408,19 +410,18 @@ class Target{
 		pmask = (pmask&240)|(r==r)|(g==g)<<1|(b==b)<<2|(a==a)<<3
 		gl.colorMask(pmask&1,pmask&2,pmask&4,pmask&8)
 		if(fb!=this.fb) gl.bindFramebuffer(GL.FRAMEBUFFER, fb = this.fb)
+		const W = (fb||gl.canvas).width, H = (fb||gl.canvas).height
+		if(!W|!H) return; if(vpw!=W||vph!=H) gl.viewport(0,0,vpw=W,vph=H)
 		gl.clear(GL.COLOR_BUFFER_BIT)
 	}
 	clearStencil(){
-		if(this.fb) if(++this.fb.stencil>=8){
-			this.fb.stencil=0
-			if(fb!=this.fb) gl.bindFramebuffer(GL.FRAMEBUFFER, fb = this.fb)
-			gl.clear(GL.STENCIL_BUFFER_BIT)
-		}else if(++mainStencil>=8){
-			mainStencil=0
-			if(fb!=this.fb) gl.bindFramebuffer(GL.FRAMEBUFFER, fb = this.fb)
-			gl.clear(GL.STENCIL_BUFFER_BIT)
-		}
-		gl.stencilMask(1<<(this.fb?this.fb.stencil:mainStencil))
+		const a = this.fb?this.fb.stencil=(this.fb.stencil+1)&7:mainStencil=(mainStencil+1)&7
+		gl.stencilMask(1<<a)
+		if(a) return
+		const W = (fb||gl.canvas).width, H = (fb||gl.canvas).height
+		if(!W|!H) return; if(vpw!=W||vph!=H) gl.viewport(0,0,vpw=W,vph=H)
+		if(fb!=this.fb) gl.bindFramebuffer(GL.FRAMEBUFFER, fb = this.fb)
+		gl.clear(GL.STENCIL_BUFFER_BIT)
 	}
 	draw(buf, textures, mask = 15, blend = 1135889, size=Infinity){
 		if(fb!=this.fb) gl.bindFramebuffer(GL.FRAMEBUFFER, fb = this.fb)
@@ -694,7 +695,7 @@ NS.autoCanvas = (renderFn) => {
 	let last = -1000000
 	requestAnimationFrame(function f(){
 		requestAnimationFrame(f)
-		x.resize(Math.round(visualViewport.width * visualViewport.scale * devicePixelRatio), Math.round(visualViewport.height * visualViewport.scale * devicePixelRatio))
+		x.resize(Math.round(innerWidth * devicePixelRatio), Math.round(innerHeight * devicePixelRatio))
 		c.style.transform = 'scale('+1/devicePixelRatio+')'
 		x.reset(devicePixelRatio/x.width,0,0,devicePixelRatio/x.height,0,0)
 		renderFn(x.width/devicePixelRatio, x.height/devicePixelRatio, -.001*Math.max(-1e3, last-(last=performance.now())))

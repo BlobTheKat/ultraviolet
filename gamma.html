@@ -164,6 +164,18 @@ class can{
 		arr[i-7] = this.#a*x+this.#c*y+this.#e; arr[i-6] = this.#b*x+this.#d*y+this.#f
 		arr[i-5] = size; arr[i-4] = r; arr[i-3] = g; arr[i-2] = b; arr[i-1] = a
 	}
+	clear(r = 0, g = 0, b = 0, a = 0){
+		const {t}=this
+		if(ca!=t){draw();if(!(ca=t))gl.bindFramebuffer(36160,null),gl.viewport(0,0,gl.canvas.width,gl.canvas.height);else{gl.bindFramebuffer(36160,fb);if(t.tex!=fbTex||t.layer!=fbLayer)gl.framebufferTextureLayer(36160,36064,fbTex=t.tex,0,targetLayer=t.layer);gl.viewport(0,0,fbTex.width,fbTex.height)}}
+		gl.clearColor(r, g, b, a)
+		pmask = (pmask&240)|(r==r)|(g==g)<<1|(b==b)<<2|(a==a)<<3
+		gl.colorMask(pmask&1,pmask&2,pmask&4,pmask&8)
+		let mask = gl.COLOR_BUFFER_BIT
+		if(this.t) if(++this.t.stencil>=8) this.t.stencil=0,mask|=gl.STENCIL_BUFFER_BIT
+		else if(++mainStencil>=8) mainStencil=0,mask|=gl.STENCIL_BUFFER_BIT
+		gl.stencilMask(1<<(this.t?this.t.stencil:mainStencil))
+		gl.clear(mask)
+	}
 }
 
 const attribTypes = Object.setPrototypeOf({
