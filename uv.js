@@ -31,17 +31,14 @@ NS.Texture = (w=0,h=0,l=0,format=NS.Formats.RGBA,options=defaultOptions) => {
 	return t
 }
 NS.Texture.setDefaultOptions = o => defaultOptions = o
-const currentlyBound = new Array(32).fill(null)
+const currentlyBound = new Array(16).fill(null)
 let currentUnit = 0
 function bindt(t){
-	const i = currentUnit|(!t.layers<<4)
-	const b = i<16?GL.TEXTURE_2D_ARRAY:GL.TEXTURE_2D
-	let o = currentlyBound[i]
-	if(o) o.unit = -1
-	else if(o=currentlyBound[i^16]) o.unit=-1,gl.bindTexture(39419-b, currentlyBound[i^16]=null)
-	currentlyBound[i] = t
-	t.unit = currentUnit
-	gl.bindTexture(b, t)
+	t.unit = currentUnit+(t.layers?4294967296:0)
+	const b = t.unit<4294967296?GL.TEXTURE_2D:GL.TEXTURE_2D_ARRAY
+	let o = currentlyBound[currentUnit]
+	if(o) (o.unit!=t.unit)&&(gl.bindTexture(39419-b, null)), o.unit = -1, currentlyBound[currentUnit]=null
+	gl.bindTexture(b, currentlyBound[currentUnit] = t)
 	return b
 }
 const BITMAP_OPTS = {imageOrientation: 'flipY', premultiplyAlpha: 'none'}
@@ -116,11 +113,11 @@ const TEX_PROTO = class{
 	uv(x=0,y=0,w=this.width,h=this.height,l=0){ return {x:x/this.width,y:(1-y+h)/this.height,w:w/this.width,h:h/this.height,l,sub} }
 	delete(){
 		gl.deleteTexture(this)
-		if(this.u){
-			if(this.u!=currentUnit) gl.activeTexture(33984+(currentUnit=this.u))
-			const u=currentUnit|(!this.layers<<4)
-			this.u=-1
-			gl.bindTexture(u<16?35866:3553,currentlyBound[u]=null)
+		const u=this.unit
+		if(u){
+			if(currentUnit!=(currentUnit=u|0)) gl.activeTexture(33984+currentUnit)
+			this.unit=-1
+			gl.bindTexture(u<4294967296?3553:35866,currentlyBound[u&15]=null)
 		}
 	}
 }.prototype
@@ -457,15 +454,15 @@ class Target{
 		pmask = mask
 		let tt = this.fb?.texture
 		if(Array.isArray(textures)){
-			if(textures.length < this.p.tunis.length || textures.length>16) return void((warns&4)&&(warns&=-5,console.warn('.draw(): Shader expects '+this.p.tunis.length+' texture(s)')))
-			let av = 255
+			if(textures.length < curProgram.tunis.length || textures.length>16) return void((warns&4)&&(warns&=-5,console.warn('.draw(): Shader expects '+curProgram.tunis.length+' texture(s)')))
+			let av = 65535
 			for(let i = 0; i < textures.length; i++){
 				const t = textures[i]
 				if(t==tt) return void((warns&8)&&(warns&=-9,console.warn('.draw(): Cannot use texture that is also being drawn to')))
 				if(t.unit > -1){
-					av &= -129>>t.unit, gl.uniform1i(curProgram.tunis[i], t.unit)
+					av &= -32769>>t.unit, gl.uniform1i(curProgram.tunis[i], t.unit)
 					if((t.mipmap&3)==3){
-			  			if(currentUnit!=t.unit) gl.activeTexture(GL.TEXTURE0+(currentUnit=t.unit))
+			  			if(currentUnit!=(currentUnit=t.unit|0)) gl.activeTexture(GL.TEXTURE0+currentUnit)
 			  			gl.generateMipmap(t.layers?GL.TEXTURE_2D_ARRAY:GL.TEXTURE_2D)
 	  				}
 				}
@@ -473,19 +470,19 @@ class Target{
 			for(let i = 0; i < textures.length; i++){
 				const t = textures[i]
 				if(t.unit > -1) continue
-				currentUnit = Math.clz32(av)-24
-				av &= -129>>currentUnit
+				currentUnit = Math.clz32(av)-16
+				av &= -32769>>currentUnit
 				gl.activeTexture(GL.TEXTURE0+currentUnit)
 				gl.uniform1i(curProgram.tunis[i], currentUnit)
 				if((t.mipmap&3)==3) gl.generateMipmap(bindt(t)); else bindt(t)
 			}
 		}else if(textures){
-			if(this.p.tunis.length>1) return warns!=(warns&=-5)?console.warn('.draw(): Shader expects '+this.p.tunis.length+' texture(s)'):void 0
+			if(curProgram.tunis.length>1) return warns!=(warns&=-5)?console.warn('.draw(): Shader expects '+curProgram.tunis.length+' texture(s)'):void 0
 			if(textures==tt)return warns!=(warns&=-9)?console.warn('.draw(): Cannot use a texture that is also being drawn to'):void 0
 			if(textures.unit > -1){
 				gl.uniform1i(curProgram.tunis[0], textures.unit)
 				if((textures.mipmap&3)==3){
-			 	if(currentUnit!=textures.unit) gl.activeTexture(GL.TEXTURE0+(currentUnit=textures.unit))
+			 	if(currentUnit!=(currentUnit=textures.unit|0)) gl.activeTexture(GL.TEXTURE0+currentUnit)
 			 	gl.generateMipmap(textures.layers?GL.TEXTURE_2D_ARRAY:GL.TEXTURE_2D)
 		 	}
 			}else{
