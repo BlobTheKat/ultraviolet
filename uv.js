@@ -152,7 +152,7 @@ class M{
 	rotate(r=0){
 		const cs = Math.cos(r), sn = Math.sin(r), a=this.#a,b=this.#b,c=this.#c,d=this.#d
 		this.#a=a*cs-c*sn; this.#b=b*cs-d*sn
-		this.#c=a*sn+b*cs; this.#d=b*sn+d*cs
+		this.#c=a*sn+c*cs; this.#d=b*sn+d*cs
 	}
 	transform(a,b,c,d,e,f){
 		const ta=this.#a,tb=this.#b,tc=this.#c,td=this.#d,te=this.#e,tf=this.#f
@@ -357,7 +357,7 @@ class Target{
 	rotate(r=0){
 		const cs = Math.cos(r), sn = Math.sin(r), a=this.#a,b=this.#b,c=this.#c,d=this.#d
 		this.#a=a*cs-c*sn; this.#b=b*cs-d*sn
-		this.#c=a*sn+b*cs; this.#d=b*sn+d*cs
+		this.#c=a*sn+c*cs; this.#d=b*sn+d*cs
 	}
 	transform(a,b,c,d,e,f){
 		const ta=this.#a,tb=this.#b,tc=this.#c,td=this.#d,te=this.#e,tf=this.#f
