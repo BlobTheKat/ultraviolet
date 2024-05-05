@@ -439,7 +439,7 @@ class Target{
 		if(vy!=this.#t) gl.uniform1ui(curProgram.uni3, vy=this.#t)
 		mask = mask&2281701631|blend<<8
 		if((pmask^mask)&15) gl.colorMask(mask&1,mask&2,mask&4,mask&8)
-		if((pmask^mask)&496){
+		if((pmask^mask)&240){
 			if(mask&240){
 				const s = fb?fb.stencil:mainStencil
 				if(!(pmask&240)) gl.enable(GL.STENCIL_TEST)
