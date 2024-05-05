@@ -71,15 +71,18 @@ class img{
 	resize(w=0, h=0, d=0){
 		const {t}=this
 		if(t.src) return
-		if(w&&h) gl.texStorage3D(35866, 1, t.f[0], this.width=w, this.height=h, this.depth=d||1)
-		else gl.texStorage3D(35866, 1, t.f[0], this.width=1, this.height=1, this.depth=1)
+		gl.activeTexture(33984+(t.i>=0?t.i:maxTex-1+(shfCount==maxTex&&maxTex)))
+		if(t.i<0) gl.bindTexture(35866, t.tex)
+		if(w&&h) gl.texStorage3D(35866, 1, t.f[0], t.w=w, t.h=h, t.d=d||1)
+		else gl.texStorage3D(35866, 1, t.f[0], t.w=1, t.h=1, t.d=1)
+		if(t.i<0) gl.bindTexture(35866, null)
 	}
 	setOptions(o){
-		const {t}=this,q=t.f[3]>>31
-		if(t.i>=0) gl.activeTexture(t.i)
-		else img.auto(this,q)
+		const {t}=this
+		gl.activeTexture(33984+(t.i>=0?t.i:maxTex-1+(shfCount==maxTex&&maxTex)))
+		if(t.i<0) gl.bindTexture(35866, t.tex)
 		t.o=o
-		if(q)
+		if(t.f[3]>>31)
 			gl.texParameterf(35866, 10240, 9728),
 			gl.texParameterf(35866, 10241, 9728)
 		else
@@ -87,6 +90,7 @@ class img{
 			gl.texParameterf(35866, 10241, 9728+(o>>1&1))
 		gl.texParameterf(35866, 10242, o&8?10497:o&16?33648:33071)
 		gl.texParameterf(35866, 10243, o&32?10497:o&64?33648:33071)
+		if(t.i<0) gl.bindTexture(35866, null)
 	}
 	drawable(l=this.l,stencil=false){
 		const {t}=this
@@ -103,23 +107,17 @@ let arr = new Float32Array(16), iarr = new Int32Array(arr.buffer), i = 0
 const Texture = (w=0, h=0, d=0, o=0, f=Formats.RGBA) => {
 	const t = new img({tex: gl.createTexture(), i: -1, o: 0, src: null, f, w, h, d: d||1})
 	t.setOptions(o)
-	if(w&&h) gl.texStorage3D(35866, 1, f[0], w, h, d||1)
+	t.resize(w, h, d)
 	return t
 }
 Object.assign(globalThis, {
 	UPSCALE_SMOOTH: 1, DOWNSCALE_SMOOTH: 2, MIPMAP_SMOOTH: 4, SMOOTH: 7, REPEAT_X: 8, REPEAT_MIRRORED_X: 16, REPEAT_Y: 32, REPEAT_MIRRORED_Y: 64, REPEAT: 40, REPEAT_MIRRORED: 80,
 	R: 1, G: 2, B: 4, A: 8,
 	RGB: 7, RGBA: 15,
-	IF_SET: 16,
-	IF_UNSET: 32,
-	UNSET: 64,
-	SET: 128,
-	FLIP: 192,
-	ONE: 17, ZERO: 0,
-	RGB_ONE: 1,
-	A_ONE: 16,
-	SRC: 34,
-	RGB_SRC: 2,
+	IF_SET: 16, IF_UNSET: 32,
+	UNSET: 64, SET: 128, FLIP: 192,
+	ONE: 17, ZERO: 0, RGB_ONE: 1, A_ONE: 16,
+	SRC: 34, RGB_SRC: 2,
 	ONE_MINUS_SRC: 51,
 	RGB_ONE_MINUS_SRC: 3,
 	SRC_ALPHA: 68,
@@ -128,8 +126,7 @@ Object.assign(globalThis, {
 	ONE_MINUS_SRC_ALPHA: 85,
 	RGB_ONE_MINUS_SRC_ALPHA: 5,
 	A_ONE_MINUS_SRC: 80,
-	DST: 136,
-	RGB_DST: 8,
+	DST: 136, RGB_DST: 8,
 	ONE_MINUS_DST: 153,
 	RGB_ONE_MINUS_DST: 9,
 	DST_ALPHA: 102,
@@ -140,22 +137,15 @@ Object.assign(globalThis, {
 	A_ONE_MINUS_DST: 112,
 	SRC_ALPHA_SATURATE: 170,
 	RGB_SRC_ALPHA_SATURATE: 10,
-
-	ADD: 17,
-	RGB_ADD: 1,
-	A_ADD: 16,
+	ADD: 17, RGB_ADD: 1, A_ADD: 16,
 	SUBTRACT: 85,
 	RGB_SUBTRACT: 5,
 	A_SUBTRACT: 80,
 	REVERSE_SUBTRACT: 102,
 	RGB_REVERSE_SUBTRACT: 6,
 	A_REVERSE_SUBTRACT: 96,
-	MIN: 34,
-	RGB_MIN: 2,
-	A_MIN: 32,
-	MAX: 51,
-	RGB_MAX: 3,
-	A_MAX: 48,
+	MIN: 34, RGB_MIN: 2, A_MIN: 32,
+	MAX: 51, RGB_MAX: 3, A_MAX: 48,
 	FLOAT: 0, VEC2: 1, VEC3: 2, VEC4: 3,
 	INT: 16, IVEC2: 17, IVEC3: 18, IVEC4: 19,
 	UINT: 32, UVEC2: 33, UVEC3: 34, UVEC4: 35,
@@ -251,6 +241,7 @@ class can{
 		else{ iarr[i-4] = r; iarr[i-3] = g; iarr[i-2] = b; iarr[i-1] = a }
 	}
 	clear(r = 0, g = 0, b = 0, a = 0){
+		// if(this.t.pp==uPointProgram) return console.warn('.clear() cannot be used on integer textures')
 		if(i)draw()
 		setv(this.t, this.#m)
 		gl.clearColor(r, g, b, a)
@@ -285,8 +276,8 @@ function setv(t,m){
 		if(!t.img) gl.bindFramebuffer(36160,null),gl.viewport(0,0,gl.canvas.width,gl.canvas.height)
 		else{
 			if(!ca.img) gl.bindFramebuffer(36160,fb)
-			if(t.tex!=fbTex||t.layer!=fbLayer)gl.framebufferTextureLayer(36160,36064,fbTex=t.tex,0,fbLayer=t.layer)
-			if(t.stencilBuf!=fbSte) gl.framebufferRenderbuffer(36160,36128,36161,t.stencilBuf)
+			if(t.tex!=fbTex||t.layer!=fbLayer) gl.framebufferTextureLayer(36160,36064,fbTex=t.tex,0,fbLayer=t.layer)
+			if(t.stencilBuf!=fbSte) gl.bindRenderbuffer(36161,t.stencilBuf),gl.framebufferRenderbuffer(36160,36128,36161,t.stencilBuf)
 			const t2 = t.img.t; gl.viewport(0,0,t2.w,t2.h)
 			if(t2.i>=0) img.bind(t2.i)
 		}
@@ -402,7 +393,7 @@ globalThis.Shader = (inputs, src, output=4, frat=0.5) => {
 		+(o&16?`highp vec4 fGetPixel(int u,ivec3 p){${T||treeIf(0,fCount)}}`:'')
 		+(o&8?`uvec4 uGetPixel(int u,ivec3 p){${treeIf(fCount,maxTex,maxTex)}}`:'')
 		+(o&28?`ivec3 getSize(int u,vec3 p){${k1='return textureSize(GL_',k2=',0);',T=treeIf(0,maxTex)}}`:'')
-	fnBody[0] = '}){const b=boundUsed;if(sh!=s){i&&draw();gl.useProgram((sh=s).program);gl.bindVertexArray(s.vao);while(shfCount>fCount)img.bind(--shfCount);while(shfCount<fCount)img.bind((maxTex<<1)-++shfCount)}let j=i;'+texCheck.join(';')+';if((i=j+'+j+')>arr.length)'+(ArrayBuffer.prototype.transfer?'(arr=gtArr||new Float32Array(arr.buffer.transfer(i*8))),iarr=new Int32Array(arr.buffer)':'{const oa=arr;(arr=gtArr||new Float32Array(i*2)).set(oa,0);iarr=new Int32Array(arr.buffer)}')
+	fnBody[0] = '}){const b=boundUsed;if(sh!=s){i&&draw();gl.useProgram((sh=s).program);gl.bindVertexArray(s.vao);/*while(shfCount>fCount)img.bind(--shfCount);while(shfCount<fCount)img.bind((maxTex<<1)-++shfCount)*/}let j=i;'+texCheck.join(';')+';if((i=j+'+j+')>arr.length)'+(ArrayBuffer.prototype.transfer?'(arr=gtArr||new Float32Array(arr.buffer.transfer(i*8))),iarr=new Int32Array(arr.buffer)':'{const oa=arr;(arr=gtArr||new Float32Array(i*2)).set(oa,0);iarr=new Int32Array(arr.buffer)}')
 	if(j==6) fnParams[0]='(function(', fnBody[0]=fnBody[0].slice(1)
 	else if(o&32) fnParams[0]='(function(a6',fnParams[1]='',fnBody[0]=fnBody[0].slice(1)
 	fnBody.push('return j})')

@@ -1,20 +1,11 @@
-const cat = await Img('sample.png', SMOOTH, Formats.RGBA8)
+const cat = await Img('sample.png', SMOOTH, Formats.RGBA)
 
-const t2 = Texture(cat.width, cat.height, 1, 0, Formats.RGBA8)
-const t2ctx = t2.drawable()
-t2ctx.shader = Shader.INT
-t2ctx.drawSquare(cat)
-// drawPoint taking u32 values
-t2ctx.drawPoint(0.5, 0.5, 50, 255, 0, 0, 255)
-
-const intToFloatShader = Shader(UCOLOR, `void main(){color=vec4(value())/255.;}`)
 export function frame(){
-	ctx.shader = intToFloatShader
 	ctx.translate(.5, .5)
 	const S = Math.min(ctx.width,ctx.height)/10
 	ctx.scale(S/ctx.width,S/ctx.height)
 	ctx.rotate(t/2)
-	ctx.drawRect(t2, -1, -1, 2, 2)
+	ctx.drawRect(cat, -1, -1, 2, 2)
 }
 
 
