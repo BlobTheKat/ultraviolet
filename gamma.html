@@ -11,6 +11,9 @@ gl.clearStencil(0)
 gl.disable(2929) // depth test
 gl.enable(3042) // blend
 gl.disable(3024) // dither
+gl.pixelStorei(3317, 1)
+gl.pixelStorei(3333, 1)
+let pma = 1
 class img{
 	get format(){return this.t.f}
 	get width(){return this.t.w}
@@ -27,10 +30,21 @@ class img{
 	crop(x=0, y=0, w=1, h=1, l=this.l){
 		return new img(this.t, this.x+x*this.z, this.y+y*this.w, this.z*w, this.w*h, l)
 	}
+	subImg(x=0, y=0, w=1, h=1, l=this.l){
+		const {t,x:X,y:Y,z:Z,w:W}=this
+		if(t.d!=0) return new img(t, X+x/t.w*Z, Y+(1-(y+h)/t.h)*W, Z*w/t.w, W*h/t.h, l)
+		const i = new img(t, 0, 0, 0, 0, l)
+		i.then(i => {
+			i.x = X+x/t.w*Z
+			i.y = Y+(1-(y+h)/t.h)*W
+			i.z = Z*w/t.w; i.w = W*h/t.h
+		})
+		return i
+	}
 	layer(l=this.l){return new img(this.t, this.x, this.y, this.z, this.w, l)}
 	#then(cb,rj){
 		const {t}=this
-		if(t.tex) return void cb(this)
+		if(t.tex) return void(t.cbs&&cb&&t.cbs.push(cb,rj,this))
 		const tex = t.tex = gl.createTexture()
 		if(!t.src.length){
 			oU=-2
@@ -39,24 +53,34 @@ class img{
 			oU=0
 			return void cb?.(this)
 		}
-		let toLoad = t.src.length
+		let toLoad = t.src.length; t.cbs = []
 		let w=0, h=0
+		const _rj = rj; rj = e => {
+			_rj?.(e); toLoad = -1
+			for(let i = 1; i < t.cbs.length; i+=3) t.cbs[i](t.cbs[i+1])
+			gl.deleteTexture(t.tex)
+			t.tex = t.cbs = null
+		}
 		const imgs = t.src.map(a=>{
 			const i = new Image()
-			i.onerror = () => (rj('Failed to load image from src '+i.src), toLoad=-1)
+			i.onerror = () => rj('Failed to load image from src '+i.src)
 			i.onload = () => {
 				if(toLoad==imgs.length) w=i.naturalWidth, h=i.naturalHeight
-				else if(w!=i.naturalWidth||h!=i.naturalHeight) return void(rj('Failed to load image: all layers must be the same size'), toLoad=-1)
+				else if(w!=i.naturalWidth||h!=i.naturalHeight) return rj('Failed to load image: all layers must be the same size')
 				if(--toLoad) return
 				oU=-2
 				this.setOptions(t.o)
 				oU=0
 				gl.texStorage3D(35866, 1, t.f[0], t.w=w, t.h=h, t.d=imgs.length)
+				if(!pma)gl.pixelStorei(37440,1),gl.pixelStorei(37441,pma=1)
 				for(let l = 0; l < imgs.length; l++)
 					gl.texSubImage3D(35866, 0, 0, 0, l, w, h, 1, t.f[1], t.f[2], imgs[l])
 				if(t.i<0) gl.bindTexture(35866, null)
 				cb?.(this)
+				for(let i = 0; i < t.cbs.length; i+=3) t.cbs[i](t.cbs[i+2])
+				t.cbs = null
 			}
+			i.crossOrigin = 'anonymous'
 			i.src = a
 			return i
 		})
@@ -69,15 +93,17 @@ class img{
 			i.onload = () => {
 				gl.activeTexture(33984+(t.i>=0?t.i:maxTex-1+(shfCount==maxTex&&maxTex)))
 				if(t.i<0) gl.bindTexture(35866, t.tex)
+				if(!pma)gl.pixelStorei(37440,1),gl.pixelStorei(37441,pma=1)
 				gl.texSubImage3D(35866, 0, x, y, l, i.naturalWidth, i.naturalHeight, 1, t.f[1], t.f[2], i)
 				if(t.i<0) gl.bindTexture(35866, null)
 				cb?.(this)
 			}
+			i.crossOrigin = 'anonymous'
 			i.src = tex
 			return
 		})
 		const {t:t2}=tex
-		if(!t2.d) return tex.#then(cb=>this.put(tex,x,y,l))
+		if(!t2.d) return tex.#then(cb=>this.paste(tex,x,y,l))
 		gl.activeTexture(33984+(t.i>=0?t.i:maxTex-1+(shfCount==maxTex&&maxTex)))
 		if(t.i<0) gl.bindTexture(35866, t.tex)
 		if(t.tex==t2.tex) return console.warn('cannot copy from texture to itself')
@@ -97,6 +123,7 @@ class img{
 		const {t}=this; w = w||t.w; h = h||t.h; d = d||t.d
 		gl.activeTexture(33984+(t.i>=0?t.i:maxTex-1+(shfCount==maxTex&&maxTex)))
 		if(t.i<0) gl.bindTexture(35866, t.tex)
+		if(pma)gl.pixelStorei(37440,0),gl.pixelStorei(37441,pma=0)
 		gl.texSubImage3D(35866, 0, x, y, l, w, h, d, t.f[1], t.f[2], data)
 		if(t.i<0) gl.bindTexture(35866, null)
 	}
@@ -117,7 +144,7 @@ class img{
 		else if(!i) gl.bindFramebuffer(36160,null), ca=ctx.t, fbLayer=l-1,fbTex=t2.tex
 		return arr
 	}
-	unload(){
+	delete(){
 		if(!this.t.tex) return
 		gl.deleteTexture(this.t.tex)
 		this.t.tex = null; if(this.t.i>=0) bound[this.t.i] = null, this.t.i = -1
@@ -180,14 +207,14 @@ class img{
 let oU=0
 let arr = new Float32Array(16), iarr = new Int32Array(arr.buffer), i = 0
 globalThis.Texture = (w=0, h=0, d=0, o=0, f=Formats.RGBA) => {
-	const t = new img({tex: gl.createTexture(), i: -1, o: 0, src: null, f, w, h, d: d||1})
+	const t = new img({tex: gl.createTexture(), i: -1, o: 0, src: null, f, w, h, d: d||1,cbs:null})
 	oU=-2
 	t.setOptions(o)
 	t.resize(w, h, d)
 	oU=0
 	return t
 }
-globalThis.Img = (src, o=0, fmt=Formats.RGBA) => new img({tex:null,i:-1,f:fmt,o,src:src?typeof src=='string'?[src]:src:[],w:0,h:0,d:0})
+globalThis.Img = (src, o=0, fmt=Formats.RGBA) => new img({tex:null,i:-1,f:fmt,o,src:src?typeof src=='string'?[src]:src:[],w:0,h:0,d:0,cbs:null})
 Object.assign(globalThis, {
 	UPSCALE_SMOOTH: 1, DOWNSCALE_SMOOTH: 2, MIPMAP_SMOOTH: 4, SMOOTH: 7, REPEAT_X: 8, REPEAT_MIRRORED_X: 16, REPEAT_Y: 32, REPEAT_MIRRORED_Y: 64, REPEAT: 40, REPEAT_MIRRORED: 80,
 	R: 1, G: 2, B: 4, A: 8,
@@ -277,7 +304,7 @@ class can{
 		this.#c=tc*x-this.#d*y;this.#d=tc*y+this.#d*x
 	}
 	getTransform(){ return {a: this.#a, b: this.#b, c: this.#c, d: this.#d, e: this.#e, f: this.#f} }
-	new(a=1,b=0,c=0,d=1,e=0,f=0){return new M(this.t,a,b,c,d,e,f,this.#shader)}
+	new(a=1,b=0,c=0,d=1,e=0,f=0){return new can(this.t,a,b,c,d,e,f,this.#shader)}
 	reset(a=1,b=0,c=0,d=1,e=0,f=0){this.#a=a;this.#b=b;this.#c=c;this.#d=d;this.#e=e;this.#f=f;this.#m=290787599;this.#shader=Shader.DEFAULT}
 	box(x=0,y=0,w=1,h=w){ this.#e+=x*this.#a+y*this.#c; this.#f+=x*this.#b+y*this.#d; this.#a*=w; this.#b*=w; this.#c*=h; this.#d*=h }
 	to(x=0, y=0){if(typeof x=='object')({x,y}=x);return {x:this.#a*x+this.#c*y+this.#e,y:this.#b*x+this.#d*y+this.#f}}
@@ -289,8 +316,8 @@ class can{
 			y: (y*a - y*b + b*this.#e - a*this.#f)/det
 		}
 	}
-	sub(){ return new M(this.t,this.#a,this.#b,this.#c,this.#d,this.#e,this.#f,this.#m,this.#shader) }
-	resetTo(m){ this.#a=m.#a;this.#b=m.#b;this.#c=m.#c;this.#d=m.#d;this.#e=m.#e;this.#f=m.#f;this.#m=m.#m; this.setShader(m.#shader) }
+	sub(){ return new can(this.t,this.#a,this.#b,this.#c,this.#d,this.#e,this.#f,this.#m,this.#shader) }
+	resetTo(m){ this.#a=m.#a;this.#b=m.#b;this.#c=m.#c;this.#d=m.#d;this.#e=m.#e;this.#f=m.#f;this.#m=m.#m;this.#shader=m.#shader }
 	set shader(sh){ this.#shader=typeof sh=='function'?sh:Shader.DEFAULT }
 	get shader(){return this.#shader}
 	set mask(m){this.#m=this.#m&-256|m&255}
@@ -520,9 +547,9 @@ globalThis.ctx = new can(ca={tex:gl.canvas,img:null,pp:pointProgram,layer:0,sten
 globalThis.t = performance.now(); globalThis.dt = 0
 
 const actx = new AudioContext({latencyHint: 'interactive'})
-const _bgGain = actx.createGain()
-_bgGain.connect(actx.destination)
-let _volume = 1
+globalThis.bgGain = actx.createGain()
+bgGain.connect(actx.destination)
+globalThis.masterVolume = 1
 globalThis.Audio = src => {
 	let buf = null
 	return function play(vol = 1, pitch = 1, pan = 0, start = 0, end = NaN, ends = true, bg = false){
@@ -545,10 +572,10 @@ globalThis.Audio = src => {
 		}
 		const source = actx.createBufferSource()
 		source.buffer = buf
-		if(bg) source.connect(_bgGain)
+		if(bg) source.connect(bgGain)
 		else{
 			let dest = actx.destination
-			const volume = _volume * vol
+			const volume = masterVolume * vol
 			if(volume != 1){
 				const gain = actx.createGain()
 				gain.gain.value = volume
