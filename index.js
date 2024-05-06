@@ -1,14 +1,13 @@
-const cat = await Img('sample.png', SMOOTH, Formats.RGBA)
-
+const cat = await Img(['sample.png', 'sample2.png'], SMOOTH)
+const cat2 = Texture(512, 512, 2)
+await cat2.paste(cat)
 export function frame(){
 	ctx.translate(.5, .5)
 	const S = Math.min(ctx.width,ctx.height)/10
 	ctx.scale(S/ctx.width,S/ctx.height)
 	ctx.rotate(t/2)
-	ctx.drawRect(cat, -1, -1, 2, 2)
+	ctx.drawRect(cat2.layer(1), -1, -1, 2, 2)
 }
-
-
 
 
 

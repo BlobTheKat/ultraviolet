@@ -278,7 +278,6 @@ class Target{
 	get width(){return (this.fb||gl.canvas).width}
 	get height(){return (this.fb||gl.canvas).height}
 	get texture(){return this.fb?.texture}
-	get gl(){return gl}
 	getData(x=0,y=0,w=this.width,h=this.height,arr=null){
 		if(fb!=this.fb) gl.bindFramebuffer(GL.FRAMEBUFFER, fb=this.fb)
 		const f = this.fb?this.fb.format:mainFormat
@@ -523,7 +522,7 @@ class Target{
 }
 let bvo = null, glbuf, curProgram, defaultProgram
 NS.setTargetCanvas = c => {
-	gl = c.getContext('webgl2', {preserveDrawingBuffer: false, antialias: false, depth: false, premultipliedAlpha: true, stencil: true})
+	gl = NS.gl = c.getContext('webgl2', {preserveDrawingBuffer: false, antialias: false, depth: false, premultipliedAlpha: true, stencil: true})
 	gl.pixelStorei(37440, 1) // flip y
 	glbuf = gl.createBuffer()
 	gl.bindBuffer(GL.ARRAY_BUFFER, glbuf)
@@ -619,7 +618,7 @@ Object.assign(NS, {
 	UPSCALE_PIXELATED: 1, DOWNSCALE_PIXELATED: 2, DOWNSCALE_MIPMAP_NEAREST: 4,
 	PIXELATED: 7, MIPMAPS: 8,
 	REPEAT: 80, REPEAT_MIRRORED: 160, REPEAT_X: 16, REPEAT_MIRRORED_X: 32, REPEAT_Y: 64, REPEAT_MIRRORED_Y: 128,
-	FIXED:0,FLOAT:1,UINT:2,LAYERED:4
+	FIXED:0,FLOAT:1,UINT:2,LAYERED:4, gl: null
 })
 NS.Blend = (src = 17, combine = 17, dst = 0) => src|dst<<8|combine<<16
 NS.Blend.REPLACE = 1114129

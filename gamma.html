@@ -1,5 +1,4 @@
-<meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin">
-<meta http-equiv="Cross-Origin-Embedder-Policy" content="credentialless">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <canvas style="position:fixed;inset:0;width:100%;height:100%;background:#000"></canvas><script type="module">
 let T=document.body
 T.parentElement.style.overflow='hidden'
@@ -16,15 +15,15 @@ class img{
 	get format(){return this.t.f}
 	get width(){return this.t.w}
 	get height(){return this.t.h}
-	get depth(){return this.t.d}
+	get layers(){return this.t.d}
 	constructor(t,x=0,y=0,z=1,w=1,l=0){
 		this.t = t; this.x = x; this.y = y
 		this.z = z; this.w = w; this.l = l
 	}
 	get src(){return this.t.src}
-	set src(a){if(this.t.src===null)return;this.t.src=a+'';if(this.t.tex)this.unload()}
+	set src(a){if(this.t.src===null)return;this.t.src=a?typeof a=='string'?[a]:a:[];if(this.t.tex)this.unload()}
 	get loaded(){return this.t.d!=0}
-	get then(){return this.t.d==0?this.#then:null}
+	get then(){return this.t.d==0&&this.t.src?this.#then:null}
 	crop(x=0, y=0, w=1, h=1, l=this.l){
 		return new img(this.t, this.x+x*this.z, this.y+y*this.w, this.z*w, this.w*h, l)
 	}
@@ -33,21 +32,96 @@ class img{
 		const {t}=this
 		if(t.tex) return void cb(this)
 		const tex = t.tex = gl.createTexture()
-		const i = new Image()
-		i.onload = i.onerror = _ => {
-			if(!i.complete) return void rj?.('Failed to load')
-			gl.activeTexture(33984+maxTex)
-			gl.bindTexture(35866, t.tex)
-			gl.texImage3D(35866, 0, t.f[0], t.w=i.naturalWidth, t.h=i.naturalHeight, t.d=1, 0, t.f[1], t.f[2], i)
+		if(!t.src.length){
+			oU=-2
 			this.setOptions(t.o)
-			cb?.(this)
+			gl.texStorage3D(35866, 1, t.f[0], t.w=1, t.h=1, t.d=1)
+			oU=0
+			return void cb?.(this)
 		}
-		i.src = this.src
+		let toLoad = t.src.length
+		let w=0, h=0
+		const imgs = t.src.map(a=>{
+			const i = new Image()
+			i.onerror = () => (rj('Failed to load image from src '+i.src), toLoad=-1)
+			i.onload = () => {
+				if(toLoad==imgs.length) w=i.naturalWidth, h=i.naturalHeight
+				else if(w!=i.naturalWidth||h!=i.naturalHeight) return void(rj('Failed to load image: all layers must be the same size'), toLoad=-1)
+				if(--toLoad) return
+				oU=-2
+				this.setOptions(t.o)
+				oU=0
+				gl.texStorage3D(35866, 1, t.f[0], t.w=w, t.h=h, t.d=imgs.length)
+				for(let l = 0; l < imgs.length; l++)
+					gl.texSubImage3D(35866, 0, 0, 0, l, w, h, 1, t.f[1], t.f[2], imgs[l])
+				if(t.i<0) gl.bindTexture(35866, null)
+				cb?.(this)
+			}
+			i.src = a
+			return i
+		})
+	}
+	paste(tex, x=0, y=0, l=0, srcX=0, srcY=0, srcL=0, srcW=0, srcH=0, srcD=0){
+		const {t}=this; if(t.src) return
+		if(typeof tex=='string') return new Promise((cb, rj) => {
+			const i = new Image()
+			i.onerror = () => rj('Failed to load image from src '+i.src)
+			i.onload = () => {
+				gl.activeTexture(33984+(t.i>=0?t.i:maxTex-1+(shfCount==maxTex&&maxTex)))
+				if(t.i<0) gl.bindTexture(35866, t.tex)
+				gl.texSubImage3D(35866, 0, x, y, l, i.naturalWidth, i.naturalHeight, 1, t.f[1], t.f[2], i)
+				if(t.i<0) gl.bindTexture(35866, null)
+				cb?.(this)
+			}
+			i.src = tex
+			return
+		})
+		const {t:t2}=tex
+		if(!t2.d) return tex.#then(cb=>this.put(tex,x,y,l))
+		gl.activeTexture(33984+(t.i>=0?t.i:maxTex-1+(shfCount==maxTex&&maxTex)))
+		if(t.i<0) gl.bindTexture(35866, t.tex)
+		if(t.tex==t2.tex) return console.warn('cannot copy from texture to itself')
+		i&&draw()
+		if(!ca.img) gl.bindFramebuffer(36160,fb)
+		srcW = srcW||t2.w; srcH = srcH||t2.h; srcD = srcD||t2.d
+		while(srcD--){
+			gl.framebufferTextureLayer(36160,36064,t2.tex,0,srcL++)
+			gl.copyTexSubImage3D(35866, 0, x, y, l++, srcX, srcY, srcW, srcH)
+		}
+		if(t.i<0) gl.bindTexture(35866, null)
+		if(!ca.img) gl.bindFramebuffer(36160,null)
+		else if(!i) gl.bindFramebuffer(36160,null), ca=ctx.t, fbLayer=srcL-1,fbTex=t2.tex
+		else gl.framebufferTextureLayer(36160,36064,fbTex,0,fbLayer)
+	}
+	pasteData(data, x=0, y=0, l=0, w=0, h=0, d=0){
+		const {t}=this; w = w||t.w; h = h||t.h; d = d||t.d
+		gl.activeTexture(33984+(t.i>=0?t.i:maxTex-1+(shfCount==maxTex&&maxTex)))
+		if(t.i<0) gl.bindTexture(35866, t.tex)
+		gl.texSubImage3D(35866, 0, x, y, l, w, h, d, t.f[1], t.f[2], data)
+		if(t.i<0) gl.bindTexture(35866, null)
+	}
+	readData(x=0, y=0, l=0, w=0, h=0, d=0, arr=null){
+		const {t}=this; w = w||t.w; h = h||t.h; d = d||t.d
+		if(!t.d) return null
+		i&&draw()
+		if(!ca.img) gl.bindFramebuffer(36160,fb)
+		const a = t.f[0]
+		const S = (a==32856||a==36214||a==36208||a==34842||a==34836||a==36220?4:a==32849||a==36215||a==36209||a==34843||a==34837||a==32849||a==36221?3:a==33323||a==33338||a==33340||a==33327||a==33328||a==33336?2:1)*w*h
+		if(!arr || arr.length != S) arr = (t.f[2]==5121?new Uint8Array(S*d):t.f[2]==5126?new Float32Array(S*d):t.f[2]==5125||t.f[2]==35899||t.f[2]==33640||t.f[2]==35902?new Uint32Array(S*d):new Uint16Array(S*d))
+		while(d--){
+			gl.framebufferTextureLayer(36160,36064,t.tex,0,l)
+			gl.readPixels(x, y, w, h, t.f[1], t.f[2], arr.subarray(S*l, S*(++l)))
+		}
+		if(t.i<0) gl.bindTexture(35866, null)
+		if(!ca.img) gl.bindFramebuffer(36160,null)
+		else if(!i) gl.bindFramebuffer(36160,null), ca=ctx.t, fbLayer=l-1,fbTex=t2.tex
+		return arr
 	}
 	unload(){
-		if(this.src===null||!this.t.tex) return
+		if(!this.t.tex) return
 		gl.deleteTexture(this.t.tex)
 		this.t.tex = null; if(this.t.i>=0) bound[this.t.i] = null, this.t.i = -1
+		this.t.d = this.t.w = this.t.h = 0
 	}
 	static auto(x,i=0){
 		const {t}=x
@@ -71,8 +145,8 @@ class img{
 	resize(w=0, h=0, d=0){
 		const {t}=this
 		if(t.src) return
-		gl.activeTexture(33984+(t.i>=0?t.i:maxTex-1+(shfCount==maxTex&&maxTex)))
-		if(t.i<0) gl.bindTexture(35866, t.tex)
+		if(!oU){gl.activeTexture(33984+(t.i>=0?t.i:maxTex-1+(shfCount==maxTex&&maxTex)))
+		if(t.i<0) gl.bindTexture(35866, t.tex)}
 		if(w&&h) gl.texStorage3D(35866, 1, t.f[0], t.w=w, t.h=h, t.d=d||1)
 		else gl.texStorage3D(35866, 1, t.f[0], t.w=1, t.h=1, t.d=1)
 		if(t.i<0) gl.bindTexture(35866, null)
@@ -90,7 +164,7 @@ class img{
 			gl.texParameterf(35866, 10241, 9728+(o>>1&1))
 		gl.texParameterf(35866, 10242, o&8?10497:o&16?33648:33071)
 		gl.texParameterf(35866, 10243, o&32?10497:o&64?33648:33071)
-		if(t.i<0) gl.bindTexture(35866, null)
+		if(t.i<oU) gl.bindTexture(35866, null)
 	}
 	drawable(l=this.l,stencil=false){
 		const {t}=this
@@ -103,13 +177,17 @@ class img{
 		return new can({tex:t.tex,img:this,pp:t.f[3]?uPointProgram:pointProgram,layer:l,stencil:0,stencilBuf})
 	}
 }
+let oU=0
 let arr = new Float32Array(16), iarr = new Int32Array(arr.buffer), i = 0
-const Texture = (w=0, h=0, d=0, o=0, f=Formats.RGBA) => {
+globalThis.Texture = (w=0, h=0, d=0, o=0, f=Formats.RGBA) => {
 	const t = new img({tex: gl.createTexture(), i: -1, o: 0, src: null, f, w, h, d: d||1})
+	oU=-2
 	t.setOptions(o)
 	t.resize(w, h, d)
+	oU=0
 	return t
 }
+globalThis.Img = (src, o=0, fmt=Formats.RGBA) => new img({tex:null,i:-1,f:fmt,o,src:src?typeof src=='string'?[src]:src:[],w:0,h:0,d:0})
 Object.assign(globalThis, {
 	UPSCALE_SMOOTH: 1, DOWNSCALE_SMOOTH: 2, MIPMAP_SMOOTH: 4, SMOOTH: 7, REPEAT_X: 8, REPEAT_MIRRORED_X: 16, REPEAT_Y: 32, REPEAT_MIRRORED_Y: 64, REPEAT: 40, REPEAT_MIRRORED: 80,
 	R: 1, G: 2, B: 4, A: 8,
@@ -157,13 +235,18 @@ globalThis.vec3 = (x=0,y=x,z=x)=>({x,y,z})
 globalThis.vec4 = (x=0,y=x,z=x,w=x)=>({x,y,z,w})
 let D
 globalThis.Formats={R:[33321,6403,5121],RG:[33323,33319,5121],RGB:[32849,6407,5121],RGBA:D=[32856,T=6408,5121],RGB565:[36194,6407,33635],R11F_G11F_B10F:[35898,6407,35899],RGB5_A1:[32855,T,32820],RGB10_A2:[32857,T,33640],RGBA4:[32854,T,32819],RGB9_E5:[35901,6407,35902],R8:[33330,T=36244,5121,1<<31],RG8:[33336,33320,5121,1<<31],RGB8:[36221,36248,5121,1<<31],RGBA8:[36220,36249,5121,1<<31],R16:[33332,T,5123,1<<31],RG16:[33338,33320,5123,1<<31],RGB16:[36215,36248,5123,1<<31],RGBA16:[36214,36249,5123,1<<31],R32:[33334,T,5125,1<<31],RG32:[33340,33320,5125,1<<31],RGB32:[36209,36248,5125,1<<31],RGBA32:[36208,36249,5125,1<<31],R16F:[33325,6403,5131],RG16F:[33327,33319,5131],RGB16F:[34843,6407,5131],RGBA16F:[34842,6408,5131],R16F_32F:[33325,6403,5126],RG16F_32F:[33327,33319,5126],RGB16F_32F:[34843,6407,5126],RGBA16F_32F:[34842,6408,5126],R32F:[33326,6403,5126],RG32F:[33328,33319,5126],RGB32F:[34837,6407,5126],RGBA32F:[34836,6408,5126]}
-Object.assign(window,(globalThis.loader=({url})=>{
+globalThis.loader=({url})=>{
 	url = url.slice(0,url.lastIndexOf('/')+1)
-	return {
-		Img: (src, o=0, fmt=Formats.RGBA) => new img({tex:null,i:-1,f:fmt,o,src:src[0]=='/'?src:url+src,w:0,h:0,d:0}),
-		Texture
+	return (...src) => {
+		if(src[0].raw){
+			const a = [src[0][0]]
+			for(let i = 1; i <= src.length; i++) a.push(src[i], src[0][i])
+			const s = a.join('')
+			return s[0]=='/'?s:url+s
+		}
+		return src.length==1?src[0][0]=='/'?src[0]:url+src[0]:src.map(src=>src[0]=='/'?src:url+src)
 	}
-})({url:location.pathname}))
+}
 class can{
 	t;#a;#b;#c;#d;#e;#f;#m;#shader
 	get width(){return this.t.tex.width}
@@ -434,15 +517,119 @@ Shader.TINT = Shader({image: COLOR, tint: VEC4}, `void main(){color=image()*tint
 globalThis.t = 0
 globalThis._gl = gl
 globalThis.ctx = new can(ca={tex:gl.canvas,img:null,pp:pointProgram,layer:0,stencil:0,stencilBuf:null})
+globalThis.t = performance.now(); globalThis.dt = 0
+
+const actx = new AudioContext({latencyHint: 'interactive'})
+const _bgGain = actx.createGain()
+_bgGain.connect(actx.destination)
+let _volume = 1
+globalThis.Audio = src => {
+	let buf = null
+	return function play(vol = 1, pitch = 1, pan = 0, start = 0, end = NaN, ends = true, bg = false){
+		if(buf === null){
+			buf = []
+			fetch(src, {credentials: 'omit', priority: 'high'}).then(a => a.arrayBuffer()).then(a => actx.decodeAudioData(a, b => {
+				const l = buf; buf = b
+				for(let i = 0; i < l.length; i++) l[i][0] = play(...l[i]), l[i].length = 1
+			}))
+		}
+		if(Array.isArray(buf)){
+			const a = [vol,pitch,pan,start,end,ends,bg]
+			buf.push(a)
+			return () => {
+				if(Array.isArray(buf)){
+					const i = buf.indexOf(a)
+					if(i > -1) buf.splice(i, 1)
+				}else a[0]()
+			}
+		}
+		const source = actx.createBufferSource()
+		source.buffer = buf
+		if(bg) source.connect(_bgGain)
+		else{
+			let dest = actx.destination
+			const volume = _volume * vol
+			if(volume != 1){
+				const gain = actx.createGain()
+				gain.gain.value = volume
+				gain.connect(dest)
+				dest = gain
+			}
+			if(pan != 0){
+				const panner = actx.createStereoPanner()
+				panner.pan.value = min(1, max(-1, pan))
+				panner.connect(dest)
+				dest = panner
+			}
+			source.playbackRate.value = pitch
+			source.connect(dest)
+		}
+		if(source.loop = !ends){
+			source.loopStart = start
+			if(end == end)source.loopEnd = end
+			source.start(0, start)
+		}else{
+			source.start(0, start, end == end ? end - start : buf.duration)
+			if(typeof ends == 'function') source.onended = ends
+		}
+		return () => { source.onended = null; source.stop() }
+	}
+}
+
+{let i=0,m=new MessageChannel,c=new Map;m.port1.onmessage=({data:i},j=c.get(i))=>(c.delete(i)&&j());m=m.port2;globalThis.setImmediate=(f,...a)=>(c.set(++i,a.length?f.bind(undefined, ...a):f),m.postMessage(i),i);globalThis.clearImmediate=i=>c.delete(i)}
+Math.fclamp = (a, b = 1) => a < 0 ? 0 : (a > b ? b : a)
+Math.ifloat = x => {
+	let f = Math.floor(x)
+	return (f >> 0) + (x - f)
+}
+Math.randint = () => Math.random() * 4294967296 | 0
+Math.ifloor = x => Math.floor(x) | 0
+Math.iceil = x => Math.ceil(x) | 0
+Math.PI2 = Math.PI*2
+Object.defineProperties(globalThis, Object.getOwnPropertyDescriptors(Math))
+Object.defineProperties(Array.prototype, {
+	winner: {enumerable: false, value(pred, best = -Infinity){
+		let winner = undefined
+		const length = this.length
+		for(let i = 0; i < length; i++){
+			const a = this[i], score = pred(a, i, this)
+			if(score >= best){
+				best = score
+				winner = a
+			}
+		}
+		return winner
+	}},
+	remove: {enumerable: false, value(a){
+		let i = 0, j = 0
+		for(; j < this.length; j++){
+			if(j > i)this[i] = this[j]
+			if(this[i] != a)i++
+		}
+		return this.length = i
+	}},
+	mmap: {enumerable: false, value(fn){
+		const len = this.length
+		for(let i = 0; i < len; i++)
+			this[i] = fn(this[i])
+		return this
+	}}
+})
+const nul = new Array(100).fill(null)
+Array.null = len => {
+	if(len <= 100) return nul.slice(0, len)
+	const a = new Array(len)
+	while(len > 0) a[--len] = null
+	return a
+}
 const {frame}=await import('./index.js')
-globalThis.t = performance.now()
 requestAnimationFrame(function f(){
-	const ndt = globalThis.t-(globalThis.t=performance.now()/1000)
+	dt = Math.min(-(globalThis.t-(globalThis.t=performance.now()/1000)), .5)
 	requestAnimationFrame(f); i&&draw()
 	gl.viewport(0, 0, gl.canvas.width = innerWidth*devicePixelRatio, gl.canvas.height = innerHeight*devicePixelRatio)
 	gl.bindFramebuffer(36160,null); ca=ctx.t
 	ctx.reset()
-	frame?.(ndt)
+	frame?.(dt)
 	i&&draw()
 })
 </script>

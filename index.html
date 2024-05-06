@@ -300,7 +300,7 @@ Thank you for coming to my TED talk.
 
 </div>
 <div id="docs" hidden>
-	<h2 refto="exports">Module exports</h2>
+	<h2 refto="exports">Library exports</h2>
 	<h2 refto="constants">Constants</h2>
 	<h2 refto="texture">Texture</h2>
 	<h2 refto="uv">UV</h2>
@@ -343,8 +343,9 @@ Thank you for coming to my TED talk.
 		Change the output canvas's color space. <c>display-p3</c> allows slightly more vibrant colors than <c>srgb</c>, while sacrificing equally in color precision
 		<k><m>colorSpace</m>(space: <t style="color:#ea2">'srgb'</t> | <t style="color:#ea2">'display-p3'</t>)</k>
 		<hr>
-		<k><d>_</d> = <t>undefined</t><br><d>PI</d> = <d style="color:#ae2">3.141592653589793</d><br><d>PI2</d> = PI*<d style="color:#ae2">2</d></k><br>
-		More constants are exposed as module exports, see the <b refto="constants">constants section</b>
+		<k><o>The underlying WebGL2 context powering the library</o>
+		<d>gl</d>: <t>WebGL2RenderingContext</t><br><d>_</d> = <t>undefined</t><br><d>PI</d> = <d style="color:#ae2">3.141592653589793</d><br><d>PI2</d> = PI*<d style="color:#ae2">2</d></k><br>
+		More constants are exposed as library exports, see the <b refto="constants">constants section</b>
 	</div>
 	<div id="constants">
 		<k><d>_</d> = <t>undefined</t><br><d>PI</d> = <d style="color:#ae2">3.141592653589793</d><br><d>PI2</d> = PI*<d style="color:#ae2">2</d></k>
@@ -540,7 +541,7 @@ Thank you for coming to my TED talk.
 		<n>constructor</n>(texture: <t refto="texture">Texture</t>, layer?: <t>int</t>, stencil?: <t>boolean</t>)</k>
 		<hr>
 		Targets are transformable. The method <c>.draw(...)</c> transform all of the mesh's coordinates based on the current transformation.<br>
-		For example, calling <c>.rotate(PI/2)</c> followed by <c>.draw(myMesh, ...)</c> will in effect draw myMesh rotated 90 degrees (.5 radians)<br>
+		For example, calling <c>.rotate(PI/2)</c> followed by <c>.draw(myMesh, ...)</c> will in effect draw myMesh rotated 90 degrees (PI/2 radians)<br>
 		With the default transformation, the bottom-left of the target's output is at coordinates <c>(0, 0)</c> and the top-right is at coordinates <c>(1, 1)</c>
 		<k><d>Target</d> <n>implements</n> <t refto="transformable">Transformable</t></k>
 		<hr>
@@ -610,8 +611,6 @@ Thank you for coming to my TED talk.
 		<n>readonly</n> .height: <t>int</t></k><br>
 		The target's texture output, if any
 		<k><n>readonly</n> .texture: <t refto="texture">Texture</t> | <t>null</t></k><br>
-		The underlying <b>WebGL2</b> context powering the library
-		<k><n>readonly</n> .gl: <t>WebGL2RenderingContext</t></k>
 	</div>
 	<div id="transformable">work in progress :(</div>
 	<div id="shader">
@@ -620,21 +619,27 @@ Thank you for coming to my TED talk.
 		<k><n>constructor</n>(glslSource: <t>string</t>, textureTypes: <t>Array</t>&lt;<d>FIXED</d>? | <d>FLOAT</d>? | <d>UINT</d>? | <d>LAYERED</d>?>, outputType: <d>FIXED</d>? | <d>FLOAT</d>? | <d>UINT</d>?) -> <t>Shader</t></k>
 		<hr>
 		Example of a valid shader:<br>(this is the default shader)
-		<k><n>void</n> main(){<br>
-			&nbsp;&nbsp;<o>// tex0 is a flat texture therefore texture() expects a vec2 coordinate</o><br>
+		<k><m>Shader</m>(<t style="color:#ea2">`</t><n>void</n> main(){<br>
+			&nbsp;&nbsp;<o>// Texture 0 is a flat texture therefore texture() expects a vec2 coordinate</o><br>
 			&nbsp;&nbsp;<d>color</d> = <m>texture</m>(<d>tex0</d>, <d>uv</d>.xy) * (<d style="color:#ae2">1.0</d> - <d>tint</d>);<br>
-		}</k>
+		}<t style="color:#ea2">`</t>, [<d>FIXED</d>], <d>FIXED</d>)</k>
+		<hr>
+		Example of default shader but for layered RGBA8 (uint) textures:<br>(this is the default shader)
+		<k><m>Shader</m>(<t style="color:#ea2">`</t><n>void</n> main(){<br>
+			&nbsp;&nbsp;<o>// Texture 0 is a flat texture therefore texture() expects a vec2 coordinate</o><br>
+			&nbsp;&nbsp;<d>color</d> = <m>vec4</m>(<m>texture</m>(<d>tex0</d>, <d>uv</d>.xyz))/<d style="color:#ae2">255.0</d> * (<d style="color:#ae2">1.0</d> - <d>tint</d>);<br>
+		}<t style="color:#ea2">`</t>, [<d>UINT</d> | <d>LAYERED</d>], <d>FIXED</d>)</k>
 		<hr>
 		Values exposed in the GLSL shader:
 		<k>
 			<n>uniform vec4</n> u;<br>
 			<n>uniform float</n> s, t;<br>
-			<n>uniform</n> (<n>sampler2D</n> | <n>usampler2D</n> | <n>sampler2DArray</n> | <n>usampler2DArray</n>)</n> tex0, tex1, ..., tex15;
+			<n>uniform</n> (<n>sampler2D</n> | <n>usampler2D</n> | <n>sampler2DArray</n> | <n>usampler2DArray</n>)</n> tex0, tex1, ..., tex15;<br>
+			<n>in vec2</n> pos, xy; <o>// automatically generated</o><br>
 			<n>in vec3</n> uv;<br>
-			<n>in vec2</n> pos, xy;<br>
 			<n>in float</n> effect;<br>
 			<n>in vec4</n> tint;<br>
-			<n>out vec4</n> color;<br>
+			<n>out</n> (<n>vec4</n> | <n>uvec4</n>) color;<br>
 		</k><br>
 		The types and precisions of <c>tex0, tex1, tex2, ...</c> are determined by the values passed to <c>textureTypes</c><br>
 		<c>pos</c> represents the coordinate inside the sprite, where <c>(0, 0)</c> is always the bottom-left of the sprite and <c>(1, 1)</c> is always the top-right<br>
