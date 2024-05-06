@@ -152,10 +152,10 @@ class M{
 		this.#c=a*sn+c*cs; this.#d=b*sn+d*cs
 	}
 	transform(a,b,c,d,e,f){
-		const ta=this.#a,tb=this.#b,tc=this.#c,td=this.#d,te=this.#e,tf=this.#f
-		this.#a = a*ta+c*tb; this.#b = b*ta+d*tb
-		this.#c = a*tc+c*td; this.#d = b*tc+d*td
-		this.#e = a*te+c*tf+e; this.#f = b*te+d*tf+f
+		const A=this.#a,B=this.#b,C=this.#c,D=this.#d,E=this.#e,F=this.#f
+		this.#a = A*a+C*b; this.#b = B*a+D*b
+		this.#c = A*c+C*d; this.#d = B*c+D*d
+		this.#e = A*e+C*f+E; this.#f = B*e+D*f+F
 	}
 	skew(x=0, y=0){
 		const ta=this.#a,tb=this.#b
@@ -356,10 +356,10 @@ class Target{
 		this.#c=a*sn+c*cs; this.#d=b*sn+d*cs
 	}
 	transform(a,b,c,d,e,f){
-		const ta=this.#a,tb=this.#b,tc=this.#c,td=this.#d,te=this.#e,tf=this.#f
-		this.#a = a*ta+c*tb; this.#b = b*ta+d*tb
-		this.#c = a*tc+c*td; this.#d = b*tc+d*td
-		this.#e = a*te+c*tf+e; this.#f = b*te+d*tf+f
+		const A=this.#a,B=this.#b,C=this.#c,D=this.#d,E=this.#e,F=this.#f
+		this.#a = A*a+C*b; this.#b = B*a+D*b
+		this.#c = A*c+C*d; this.#d = B*c+D*d
+		this.#e = A*e+C*f+E; this.#f = B*e+D*f+F
 	}
 	skew(x=0, y=0){
 		const ta=this.#a,tb=this.#b
