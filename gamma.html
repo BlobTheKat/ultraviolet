@@ -325,8 +325,8 @@ class can{
 	get mask(){return this.#m&255}
 	set blend(b){this.#m=this.#m&255|(b||1135889)<<8}
 	get blend(){return this.#m>>8}
-	get shape(){return this.s}
-	set shape(a){this.s=a||defaultShape}
+	get geometry(){return this.s}
+	set geometry(a){this.s=a||defaultShape}
 	draw(values){
 		setv(this.t,this.#m); const i = this.#shader(values)
 		arr[i  ] = this.#a; arr[i+1] = this.#c; arr[i+2] = this.#e
@@ -422,7 +422,7 @@ const buf = gl.createBuffer()
 gl.bindBuffer(34962, buf)
 const maxTex = Math.min(32, gl.getParameter(34930))
 const bound = []; for(let i=maxTex<<1;i>=0;i--) bound.push(null)
-globalThis.Shape = (type, points) => {
+globalThis.Geometry = (type, points) => {
 	if(points.length%1) throw 'points.length is not even'
 	if(!(points instanceof Float32Array)){
 		T = new Float32Array(points.length)
@@ -437,7 +437,7 @@ globalThis.Shape = (type, points) => {
 const shapeSub = function sub(s=0,l=this.l-s, type=this.type){
 	return {type, b: this.b, s: this.s+s, l, sub}
 }
-let gtArr = null, maxLen=0, boundUsed = 0, shp = Shape(TRIANGLE_STRIP, [0, 0, 0, 1, 1, 0, 1, 1])
+let gtArr = null, maxLen=0, boundUsed = 0, shp = Geometry(TRIANGLE_STRIP, [0, 0, 0, 1, 1, 0, 1, 1])
 const defaultShape = shp
 let k1, k2
 const treeIf = (s=0, e = maxTex,o=0) => {
@@ -499,7 +499,7 @@ globalThis.Shader = (inputs, src, output=4, frat=0.5) => {
 		+(o&16?`highp vec4 fGetPixel(int u,ivec3 p){${T||treeIf(0,fCount)}}`:'')
 		+(o&8?`uvec4 uGetPixel(int u,ivec3 p){${treeIf(fCount,maxTex,maxTex-fCount)}}`:'')
 		+(o&28?`ivec3 getSize(int u,vec3 p){${k1='return textureSize(GL_',k2=',0);',T=treeIf(0,maxTex)}}`:'')
-	fnBody[0] = '}){const b=boundUsed;if(sh!=s){i&&draw();shfCount=fCount;gl.useProgram((sh=s).program);s.vwUni&&gl.uniform2f(s.vwUni,this.t.w,this.t.h);gl.bindVertexArray(s.vao)}if(shp!=this.s){i&&draw();shp=this.s}if(s.shape!=this.s.b){gl.bindBuffer(34962,s.shape=this.s.b);gl.vertexAttribPointer(0,2,5126,0,0,0);gl.bindBuffer(34962,buf)}'+texCheck.join(';')+';const j=i;if((i=j+'+j+')>arr.length)'+(ArrayBuffer.prototype.transfer?'(arr=gtArr||new Float32Array(arr.buffer.transfer(i*8))),iarr=new Int32Array(arr.buffer)':'{const oa=arr;(arr=gtArr||new Float32Array(i*2)).set(oa,0);iarr=new Int32Array(arr.buffer)}')
+	fnBody[0] = '}){const b=boundUsed;if(sh!=s){i&&draw();shfCount=fCount;gl.useProgram((sh=s).program);s.vwUni&&gl.uniform2f(s.vwUni,this.t.w,this.t.h);gl.bindVertexArray(s.vao)}if(shp!=this.s){i&&draw();shp=this.s}if(s.geometry!=this.s.b){gl.bindBuffer(34962,s.geometry=this.s.b);gl.vertexAttribPointer(0,2,5126,0,0,0);gl.bindBuffer(34962,buf)}'+texCheck.join(';')+';const j=i;if((i=j+'+j+')>arr.length)'+(ArrayBuffer.prototype.transfer?'(arr=gtArr||new Float32Array(arr.buffer.transfer(i*8))),iarr=new Int32Array(arr.buffer)':'{const oa=arr;(arr=gtArr||new Float32Array(i*2)).set(oa,0);iarr=new Int32Array(arr.buffer)}')
 	if(j==6) fnParams[0]='(function(', fnBody[0]=fnBody[0].slice(1)
 	else if(o&32) fnParams[0]='(function(a6',fnParams[1]='',fnBody[0]=fnBody[0].slice(1)
 	fnBody.push('return j})')
@@ -523,7 +523,7 @@ globalThis.Shader = (inputs, src, output=4, frat=0.5) => {
 	s.vwUni = gl.getUniformLocation(p, 'viewport')
 	gl.bindVertexArray(s.vao = gl.createVertexArray())
 	let i1 = 1, i2 = 0
-	gl.bindBuffer(34962, s.shape = defaultShape.b)
+	gl.bindBuffer(34962, s.geometry = defaultShape.b)
 	gl.enableVertexAttribArray(0)
 	gl.vertexAttribPointer(0, 2, 5126, 0, 0, 0)
 	gl.bindBuffer(34962, buf)
