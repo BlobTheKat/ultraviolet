@@ -255,7 +255,7 @@ Object.assign(globalThis, {
 	INT: 16, IVEC2: 17, IVEC3: 18, IVEC4: 19,
 	UINT: 32, UVEC2: 33, UVEC3: 34, UVEC4: 35,
 	TEXTURE: 20, UTEXTURE: 24, FTEXTURE: 28, COLOR: 4, UCOLOR: 8, FCOLOR: 12,
-	FIXED: 4, _: undefined,
+	NORM: 4, _: undefined,
 	TRIANGLE_STRIP: 5, TRIANGLES: 4, TRIANGLE_FAN: 6, LINE_LOOP: 2, LINE_STRIP: 3, LINES: 1, POINTS: 0
 })
 globalThis.vec2 = (x=0,y=x)=>({x,y})
@@ -431,7 +431,6 @@ globalThis.Shape = (type, points) => {
 	const b = gl.createBuffer()
 	gl.bindBuffer(34962, b)
 	gl.bufferData(34962, points, 35044)
-	b.type = type
 	gl.bindBuffer(34962, buf)
 	return {type, b, s: 0, l: points.length>>1, sub: shapeSub}
 }

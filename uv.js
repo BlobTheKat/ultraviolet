@@ -240,9 +240,11 @@ class M{
 		gl.vertexAttribPointer(2, 4, F, false, 64, 24)
 		gl.vertexAttribPointer(3, 4, F, false, 64, 40)
 		gl.vertexAttribPointer(4, 2, F, false, 64, 56)
-		for(let i = 0; i < 5; i++){
+		gl.bindBuffer(GL.ARRAY_BUFFER, v.geo = mainGeo)
+		gl.vertexAttribPointer(5, 2, F, false, 0, 0)
+		for(let i = 0; i < 6; i++){
 			gl.enableVertexAttribArray(i)
-			gl.vertexAttribDivisor(i, 1)
+			gl.vertexAttribDivisor(i, i<5)
 		}
 		v.size = L/64
 		v.buf = b
@@ -283,15 +285,27 @@ WebGLVertexArrayObject.prototype.delete = function(){
 	gl.deleteVertexArray(this)
 	if(this.buf) gl.deleteBuffer(this.buf)
 }
+NS.Geometry = (type=5, points) => {
+	if(!(points instanceof Float32Array)){
+		const f = new Float32Array(points.length)
+		f.set(points, 0); points = f
+	}
+	const b = gl.createBuffer()
+	gl.bindBuffer(GL.ARRAY_BUFFER, b)
+	gl.bufferData(GL.ARRAY_BUFFER, points, GL.STATIC_DRAW)
+	return {type, b, s: 0, l: points.length>>1, sub: shapeSub}
+}
+const shapeSub = function sub(s=0,l=this.l-s, type=this.type){
+	return {type, b: this.b, s: this.s+s, l, sub}
+}
 const mat2x3 = new Float32Array(6)
 let fb = null
 let mainStencil = 0
 let pmask = 0
-let ux=0, uy=0, uz=0, uw=0, vx=0, vy=0
 let warns = -1
-let vpw = 0, vph = 0, os=0
+let vpw = 0, vph = 0, os=0,mainGeo,defaultGeometry
 class Target{
-	fb;p;m;#a;#b;#c;#d;#e;#f
+	fb;p;m;k;#a;#b;#c;#d;#e;#f
 	get width(){return (this.fb||gl.canvas).width}
 	get height(){return (this.fb||gl.canvas).height}
 	get texture(){return this.fb?.texture}
@@ -360,8 +374,8 @@ class Target{
 		!tex.layers ? gl.framebufferTexture2D(GL.READ_FRAMEBUFFER, GL.COLOR_ATTACHMENT0, GL.TEXTURE_2D, tex, 0)
 		: gl.framebufferTextureLayer(GL.READ_FRAMEBUFFER, GL.COLOR_ATTACHMENT0, tex, 0, l)
 	}
-	constructor(fb,p,m=581575183,a=1,b=0,c=0,d=1,e=0,f=0){
-		this.fb=fb; this.p=p; this.m=m
+	constructor(fb,p,m=581575183,k=defaultGeometry,a=1,b=0,c=0,d=1,e=0,f=0){
+		this.fb=fb; this.p=p; this.m=m; this.k=k
 		this.#a=a;this.#b=b;this.#c=c;this.#d=d;this.#e=e;this.#f=f
 	}
 	translate(x=0,y=0){ this.#e+=x*this.#a+y*this.#c;this.#f+=x*this.#b+y*this.#d }
@@ -388,10 +402,12 @@ class Target{
 		this.#c=tc*x-this.#d*y;this.#d=tc*y+this.#d*x
 	}
 	getTransform(){ return {a: this.#a, b: this.#b, c: this.#c, d: this.#d, e: this.#e, f: this.#f} }
-	new(a=1,b=0,c=0,d=1,e=0,f=0){return new Target(this.fb,defaultProgram,581575183,a,b,c,d,e,f)}
-	reset(a=1,b=0,c=0,d=1,e=0,f=0){this.#a=a;this.#b=b;this.#c=c;this.#d=d;this.#e=e;this.#f=f;this.p=defaultProgram;this.m=581575183}
+	new(a=1,b=0,c=0,d=1,e=0,f=0){return new Target(this.fb,defaultProgram,581575183,defaultGeometry,a,b,c,d,e,f)}
+	reset(a=1,b=0,c=0,d=1,e=0,f=0){this.#a=a;this.#b=b;this.#c=c;this.#d=d;this.#e=e;this.#f=f;this.p=defaultProgram;this.m=581575183;this.k=defaultGeometry}
 	resetTo(t){
-		this.#a=t.#a;this.#b=t.#b;this.#c=t.#c;this.#d=t.#d;this.#e=t.#e;this.#f=t.#f;this.p=t.p;this.m=t.m
+		this.#a=t.#a; this.#b=t.#b; this.#c=t.#c
+		this.#d=t.#d; this.#e=t.#e; this.#f=t.#f
+		this.p=t.p; this.m=t.m; this.k=t.k
 	}
 	box(x=0,y=0,w=1,h=w){ this.#e+=x*this.#a+y*this.#c; this.#f+=x*this.#b+y*this.#d; this.#a*=w; this.#b*=w; this.#c*=h; this.#d*=h }
 	to(x, y){if(typeof x=='object')({x,y}=x);return {x:this.#a*x+this.#c*y+this.#e,y:this.#b*x+this.#d*y+this.#f}}
@@ -403,9 +419,11 @@ class Target{
 			y: (y*a - y*b + b*this.#e - a*this.#f)/det
 		}
 	}
-	sub(){ return new Target(this.fb,this.p,this.m,this.#a,this.#b,this.#c,this.#d,this.#e,this.#f) }
+	sub(){ return new Target(this.fb,this.p,this.m,this.k,this.#a,this.#b,this.#c,this.#d,this.#e,this.#f) }
 	set shader(p){ this.p = p||defaultProgram }
 	get shader(){return this.p}
+	set geometry(k){ this.k = p||defaultGeometry }
+	get geometry(){return this.k}
 	get blend(){return this.m>>>9}
 	set blend(a){this.m=this.m&511|a<<9}
 	get mask(){return this.m&511}
@@ -440,21 +458,21 @@ class Target{
 		const W = (fb||gl.canvas).width, H = (fb||gl.canvas).height
 		if(!W|!H) return
 		if(vpw!=W||vph!=H) gl.viewport(0,0,vpw=W,vph=H)
-		if(curProgram!=this.p) gl.useProgram(curProgram = this.p),ux=vx=NaN
+		if(curProgram!=this.p) gl.useProgram(curProgram = this.p)
 		mat2x3[0] = this.#a*2; mat2x3[3] = this.#b*2; mat2x3[1] = this.#c*2
 		mat2x3[4] = this.#d*2; mat2x3[2] = this.#e*2-1; mat2x3[5] = this.#f*2-1
 		gl.uniformMatrix2x3fv(curProgram.muni, false, mat2x3)
-		if(ux!=u1||uy!=u2||uz!=u3||uw!=u4)
-			gl.uniform4f(curProgram.uni1, ux=u1, uy=u2, uz=u3, uw=u4)
-		if(vx!=s) gl.uniform1ui(curProgram.uni2, vx=s)
-		if(vy!=t) gl.uniform1ui(curProgram.uni3, vy=t)
-		const mask = this.m, s = fb?fb.stencil:mainStencil, diff = pmask^mask^(s!=os)<<4
+		if(curProgram.a!=u1||curProgram.b!=u2||curProgram.c!=u3||curProgram.d!=u4)
+			gl.uniform4f(curProgram.uni1, curProgram.a=u1, curProgram.b=u2, curProgram.c=u3, curProgram.d=u4)
+		if(curProgram.e!=s) gl.uniform1ui(curProgram.uni2, curProgram.e=s)
+		if(curProgram.f!=t) gl.uniform1ui(curProgram.uni3, curProgram.f=t)
+		const mask = this.m, stn = fb?fb.stencil:mainStencil, diff = pmask^mask^(stn!=os)<<4
 		if(diff&15) gl.colorMask(mask&1,mask&2,mask&4,mask&8)
 		if(diff&240){
 			if(mask&240){
 				if(!(pmask&240)) gl.enable(GL.STENCIL_TEST)
-				gl.stencilMask(1<<(os=s))
-				gl.stencilFunc(mask&32?mask&16?GL.NEVER:GL.NOTEQUAL:mask&16?GL.EQUAL:GL.ALWAYS, 255, 1<<s)
+				gl.stencilMask(1<<(os=stn))
+				gl.stencilFunc(mask&32?mask&16?GL.NEVER:GL.NOTEQUAL:mask&16?GL.EQUAL:GL.ALWAYS, 255, 1<<stn)
 				const op = mask&128?mask&64?GL.INVERT:GL.REPLACE:mask&64?GL.ZERO:GL.KEEP
 				gl.stencilOp(op, op, op)
 			}else gl.disable(GL.STENCIL_TEST)
@@ -463,7 +481,7 @@ class Target{
 		if(diff&33553920) gl.blendFuncSeparate((mask>>9&15)+(mask&7168&&766), (mask>>17&15)+(mask&1835008&&766), (mask>>13&15)+(mask&114688&&766), (mask>>21&15)+(mask&29360128&&766))
 		if(diff&256) if(mask&256) gl.enable(GL.DITHER); else gl.disable(GL.DITHER)
 		pmask = mask
-		let tt = this.fb?.texture
+		const tt = this.fb?.texture, k=this.k
 		if(Array.isArray(textures)){
 			if(textures.length < curProgram.tunis.length || textures.length>16) return void((warns&4)&&(warns&=-5,console.warn('.draw(): Shader expects '+curProgram.tunis.length+' texture(s)')))
 			let av = -1
@@ -506,21 +524,30 @@ class Target{
 		if(tt) tt.mipmap|=1
 		if(buf instanceof WebGLVertexArrayObject){
 			if(bvo != buf) gl.bindVertexArray(bvo = buf)
-			gl.drawArraysInstanced(GL.TRIANGLE_STRIP, 0, 4, Math.min(size, buf.size))
+			let geo = buf.geo
+			if(geo!=(geo=k.b)){
+				gl.bindBuffer(GL.ARRAY_BUFFER, buf.geo = geo)
+				gl.vertexAttribPointer(5, 2, F, false, 0, 0)
+			}
+			gl.drawArraysInstanced(k.type, k.s, k.l, Math.min(size, buf.size))
 			return
 		}
-		gl.bindBuffer(GL.ARRAY_BUFFER, glbuf)
 		if(bvo) gl.bindVertexArray(bvo = null)
+		if(mainGeo!=(mainGeo=k.b)){
+			gl.bindBuffer(GL.ARRAY_BUFFER, mainGeo)
+			gl.vertexAttribPointer(5, 2, F, false, 0, 0)
+		}
+		gl.bindBuffer(GL.ARRAY_BUFFER, glbuf)
 		if(!buf.arr){
 			gl.bufferData(GL.ARRAY_BUFFER, buf, GL.STREAM_DRAW)
-			gl.drawArraysInstanced(GL.TRIANGLE_STRIP, 0, 4, Math.min(size, buf.byteLength/64))
+			gl.drawArraysInstanced(k.type, k.s, k.l, Math.min(size, buf.byteLength/64))
 		}else{
 			if(!buf.arr.cur)return warns!=(warns&=-65)?console.warn('.draw(): Mesh has already been consumed. Use .upload() if you want to draw the mesh more than once'):void 0
 			gl.bufferData(GL.ARRAY_BUFFER, buf.arr.length*32768+buf.arr.i*4, GL.STREAM_DRAW)
 			for(let i = 0; i < buf.arr.length; i++)
 				gl.bufferSubData(GL.ARRAY_BUFFER, i*32768, buf.arr[i])
 			gl.bufferSubData(GL.ARRAY_BUFFER, buf.arr.length*32768, buf.arr.cur, 0, buf.arr.i)
-			gl.drawArraysInstanced(GL.TRIANGLE_STRIP, 0, 4, Math.min(size, buf.size))
+			gl.drawArraysInstanced(k.type, k.s, k.l, Math.min(size, buf.size))
 			buf.delete()
 		}
 	}
@@ -543,9 +570,12 @@ NS.setTargetCanvas = c => {
 	gl.vertexAttribPointer(2, 4, F, false, 64, 24)
 	gl.vertexAttribPointer(3, 4, F, false, 64, 40)
 	gl.vertexAttribPointer(4, 2, F, false, 64, 56)
-	for(let i = 0; i < 5; i++){
+	mainGeo=(defaultGeometry=NS.Shape(5,[0,0,0,1,1,0,1,1])).b
+	gl.bindBuffer(GL.ARRAY_BUFFER, mainGeo)
+	gl.vertexAttribPointer(5, 2, F, false, 0, 0)
+	for(let i = 0; i < 6; i++){
 		gl.enableVertexAttribArray(i)
-		gl.vertexAttribDivisor(i, 1)
+		gl.vertexAttribDivisor(i, i<5)
 	}
 	vert = gl.createShader(GL.VERTEX_SHADER)
 	gl.shaderSource(vert, `#version 300 es
@@ -554,10 +584,11 @@ layout(location=0) in mat2x3 m;
 layout(location=2) in vec4 _uv;
 layout(location=3) in vec4 _tint;
 layout(location=4) in vec2 values;
+layout(location=5) in vec2 _pos;
 out vec3 uv; out vec2 pos,xy; flat out float effect; flat out vec4 tint;
 void main(){
-	pos = vec2(gl_VertexID&1, gl_VertexID>>1);
-	gl_Position = vec4(vec3(xy=vec3(pos,1.)*m,1.)*global,0.,1.);
+	gl_PointSize=1.;
+	gl_Position = vec4(vec3(xy=vec3(pos=_pos,1.)*m,1.)*global,0.,1.);
 	uv = vec3(_uv.xy + pos*_uv.zw, values.x); tint = _tint; effect = values.y;
 }`)
 	gl.compileShader(vert)
@@ -572,8 +603,8 @@ void main(){
 	fb = bvo = null
 	mainStencil = 0
 	pmask = 570434063
-	ux=0, uy=0, uz=0, uw=0, vx=0, vy=0, avail=0, vpw = 0, vph = 0, os=0
-	return new Target(null, defaultProgram)
+	avail=0, vpw = 0, vph = 0, os=0
+	return new Target(null)
 }
 Object.assign(NS, {
 	R: 1, G: 2, B: 4, A: 8,
@@ -630,7 +661,8 @@ Object.assign(NS, {
 	UPSCALE_PIXELATED: 1, DOWNSCALE_PIXELATED: 2, DOWNSCALE_MIPMAP_NEAREST: 4,
 	PIXELATED: 7, MIPMAPS: 8,
 	REPEAT: 80, REPEAT_MIRRORED: 160, REPEAT_X: 16, REPEAT_MIRRORED_X: 32, REPEAT_Y: 64, REPEAT_MIRRORED_Y: 128,
-	NORM:0,FLOAT:1,UINT:2,LAYERED:4, gl: null
+	NORM:0,FLOAT:1,UINT:2,LAYERED:4, gl: null,
+	TRIANGLE_STRIP: 5, TRIANGLES: 4, TRIANGLE_FAN: 6, LINE_LOOP: 2, LINE_STRIP: 3, LINES: 1, POINTS: 0
 })
 NS.Blend = (src = 17, combine = 17, dst = 0) => src|dst<<8|combine<<16
 NS.Blend.REPLACE = 1114129
@@ -665,7 +697,7 @@ NS.Target = (w = 0, h = 0, format = NS.Formats.RGBA, stencil = true) => {
 		gl.framebufferRenderbuffer(GL.READ_FRAMEBUFFER, GL.STENCIL_ATTACHMENT, GL.RENDERBUFFER, s)
 		t.stencil = 0
 	}
-	return new Target(t, defaultProgram)
+	return new Target(t)
 }
 NS.Shader = (src, t=[], w=0) => {
 	const p = gl.createProgram()
@@ -695,6 +727,7 @@ out lowp vec4 c;void main(){c=vec4(0,0,0,1);}`)
 	p.uni1 = gl.getUniformLocation(p, 'u')
 	p.uni2 = gl.getUniformLocation(p, 's')
 	p.uni3 = gl.getUniformLocation(p, 't')
+	p.a=p.b=p.c=p.d=p.e=p.f=0
 	p.tunis = Array.from({length:16},(_,i) => gl.getUniformLocation(p,'tex'+i))
 	while(p.tunis.length&&!p.tunis[p.tunis.length-1]) p.tunis.pop()
 	return p
@@ -704,7 +737,7 @@ NS.autoCanvas = (renderFn) => {
 	document.documentElement.append(c)
 	c.style = 'position: fixed; top: 0; left: 0; border: 0; padding: 0; margin: 0; transform-origin: 0 0'
 	const x = NS.setTargetCanvas(c)
-	let last = -1000000
+	let last = performance.now()
 	requestAnimationFrame(function f(){
 		requestAnimationFrame(f)
 		x.resize(Math.round(innerWidth * devicePixelRatio), Math.round(innerHeight * devicePixelRatio))

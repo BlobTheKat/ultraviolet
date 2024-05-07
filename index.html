@@ -297,6 +297,13 @@ const s = 1, t = 2, // accessible as `uniform float s, t;` in shader
 // If your shader uses a specific texture type make sure to pass the correct one in .draw()!
 ctx.draw(mesh, [tex0, tex1, tex2, tex3, ...], s, t, u[0], u[1], u[2], u[3])
 </code-area><br>
+<li>Custom sprite shapes</li>
+<code-area lang="js" disabled>
+const star = Shape(TRIANGLE_FAN, [.5, .5, .5, 1, ...]) // normalize values to [0,1] for better results
+ctx.shape = star
+// All of mesh's sprites will be drawn as a star shape
+ctx.draw(mesh, ...)
+</code-area><br>
 Thank you for coming to my TED talk.
 
 </div>
@@ -407,9 +414,11 @@ Thank you for coming to my TED talk.
 			<d>MIPMAPS</d><br>
 			<d>REPEAT_X</d>, <d>REPEAT_Y</d>, <d>REPEAT</d> = REPEAT_X|REPEAT_Y<br>
 			<d>REPEAT_MIRRORED_X</d>, <d>REPEAT_MIRRORED_Y</d><br>
-			<d>REPEAT_MIRRORED</d> = REPEAT_MIRRORED_X|REPEAT_MIRRORED_Y
+			<d>REPEAT_MIRRORED</d> = REPEAT_MIRRORED_X|REPEAT_MIRRORED_Y<br><br>
 			<o>// Constants used by Shader() input/output type</o><br>
-			<d>NORM</d>, <d>FLOAT</d>, <d>UINT</d><br>, <d>LAYERED</d><br>
+			<d>NORM</d>, <d>FLOAT</d>, <d>UINT</d>, <d>LAYERED</d><br><br>
+			<o>// Constants used by Shape() type</o><br>
+			<d>TRIANGLE_STRIP</d>, <d>TRIANGLES</d>, <d>TRIANGLE_FAN</d>, <d>LINE_LOOP</d>, <d>LINE_STRIP</d>, <d>LINES</d>, <d>POINTS</d>
 		</k>
 	</div>
 	<div id="texture">
@@ -785,7 +794,7 @@ Thank you for coming to my TED talk.
 	}
 	const lib = fetch('./uv.min.js').then(a => a.text())
 	sandbox.oncompile = src => lib.then(t => {
-		sandboxi.srcdoc = '<div id=errors style="color:red;font:700 16px monospace;white-space:pre-wrap;pointer-events:none;touch-action:none;position:absolute;bottom:8px"></div><script>"use strict";addEventListener("error",onunhandledrejection=console.warn=console.error=e=>{errors.append((e.message||e.reason||e)+"\\n");errors.childNodes.length>5&&errors.childNodes[0].remove();e.preventDefault?.()});'+t+'<\/script><script>'+src.replace(/<\/script>/g,'<\\/script>') + '<\/script>'
+		sandboxi.srcdoc = '<div id=errors style="color:red;font:700 16px monospace;white-space:pre-wrap;pointer-events:none;touch-action:none;position:absolute;bottom:8px"></div><script>"use strict";addEventListener("error",onunhandledrejection=console.warn=console.error=e=>{errors.append((e.message||e.reason||e)+"\\n");errors.childNodes.length>5&&errors.childNodes[0].remove();e.preventDefault2?.()});'+t+'<\/script><script>'+src.replace(/<\/script>/g,'<\\/script>') + '<\/script>'
 	})
 	syntaxes.js2 = [[/\}/y, 'color: #ea2', 'jsstring'], ...syntaxes.js]
 	for(const c of document.getElementsByTagName('code-area'))
