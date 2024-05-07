@@ -297,10 +297,10 @@ const s = 1, t = 2, // accessible as `uniform float s, t;` in shader
 // If your shader uses a specific texture type make sure to pass the correct one in .draw()!
 ctx.draw(mesh, [tex0, tex1, tex2, tex3, ...], s, t, u[0], u[1], u[2], u[3])
 </code-area><br>
-<li>Custom sprite shapes</li>
+<li>Custom sprite geometry</li>
 <code-area lang="js" disabled>
-const star = Shape(TRIANGLE_FAN, [.5, .5, .5, 1, ...]) // normalize values to [0,1] for better results
-ctx.shape = star
+const star = Geometry(TRIANGLE_FAN, [.5, .5, .5, 1, ...]) // normalize values to [0,1] for better results
+ctx.geometry = star
 // All of mesh's sprites will be drawn as a star shape
 ctx.draw(mesh, ...)
 </code-area><br>
@@ -417,7 +417,7 @@ Thank you for coming to my TED talk.
 			<d>REPEAT_MIRRORED</d> = REPEAT_MIRRORED_X|REPEAT_MIRRORED_Y<br><br>
 			<o>// Constants used by Shader() input/output type</o><br>
 			<d>NORM</d>, <d>FLOAT</d>, <d>UINT</d>, <d>LAYERED</d><br><br>
-			<o>// Constants used by Shape() type</o><br>
+			<o>// Constants used by Geometry() type</o><br>
 			<d>TRIANGLE_STRIP</d>, <d>TRIANGLES</d>, <d>TRIANGLE_FAN</d>, <d>LINE_LOOP</d>, <d>LINE_STRIP</d>, <d>LINES</d>, <d>POINTS</d>
 		</k>
 	</div>

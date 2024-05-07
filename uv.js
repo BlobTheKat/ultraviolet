@@ -570,7 +570,7 @@ NS.setTargetCanvas = c => {
 	gl.vertexAttribPointer(2, 4, F, false, 64, 24)
 	gl.vertexAttribPointer(3, 4, F, false, 64, 40)
 	gl.vertexAttribPointer(4, 2, F, false, 64, 56)
-	mainGeo=(defaultGeometry=NS.Shape(5,[0,0,0,1,1,0,1,1])).b
+	mainGeo=(defaultGeometry=NS.Geometry(5,[0,0,0,1,1,0,1,1])).b
 	gl.bindBuffer(GL.ARRAY_BUFFER, mainGeo)
 	gl.vertexAttribPointer(5, 2, F, false, 0, 0)
 	for(let i = 0; i < 6; i++){
