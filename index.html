@@ -549,7 +549,7 @@ Thank you for coming to my TED talk.
 		<k><d>Target</d> <n>implements</n> <t refto="transformable">Transformable</t></k>
 		<hr>
 		Draws a mesh to the target's output<br>
-		If <c>textures</c> is not specified, the textures from the previous <c>.draw(...)</c> call will be used, <b>as long as no textures have been mutated since then</b> (if they have, then you must re-specify <c>textures</c>).<br>
+		If <c>textures</c> is not specified, the textures from the previous <c>.draw(...)</c> call (chronologically) will be used, <b>as long as the shader is the same as the one that was used with that previous draw call</b> (if it isn't, then you must re-specify <c>textures</c>).<br>
 		If <c>textures</c> is not an array, then <c>textures = [textures]</c>.<br>
 		The default value for <c>drawFlags</c> is <c>R | G | B | A</c> (or short, <c>RGBA</c>).<br>
 		The default value for <c>blend</c> is <c>Blend(ONE, ADD, ONE_MINUS_SRC_ALPHA)</c>.<br>
