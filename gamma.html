@@ -412,8 +412,8 @@ function setv(t,m){
 function draw(b=0){
 	//if((ca?ca.img.t.f[3]:0)!=sh.outInt) return console.warn('Texture drawn to and shader output type must be of the same kind (integer/float)')
 	gl.bufferData(34962, iarr.subarray(0, i), 35040)
-	const {type,s,e}=shp
-	gl.drawArraysInstanced(type, s, e, i/sh.count)
+	const {type,s,l}=shp
+	gl.drawArraysInstanced(type, s, l, i/sh.count)
 	i = 0; boundUsed = b
 }
 let sh=null,ca=null,fbTex=null,fbSte=null,fbLayer=0,shfCount=0
@@ -433,10 +433,10 @@ globalThis.Shape = (type, points) => {
 	gl.bufferData(34962, points, 35044)
 	b.type = type
 	gl.bindBuffer(34962, buf)
-	return {type, b, s: 0, e: points.length>>1, sub: shapeSub}
+	return {type, b, s: 0, l: points.length>>1, sub: shapeSub}
 }
-const shapeSub = function sub(s=0,len=this.e-s, type=this.type){
-	return {type, b: this.b, s: s+=this.s, e: s+len, sub}
+const shapeSub = function sub(s=0,l=this.l-s, type=this.type){
+	return {type, b: this.b, s: this.s+s, l, sub}
 }
 let gtArr = null, maxLen=0, boundUsed = 0, shp = Shape(TRIANGLE_STRIP, [0, 0, 0, 1, 1, 0, 1, 1])
 const defaultShape = shp

@@ -156,7 +156,7 @@ const particleShader = Shader(`void main(){
 	color = texture(tex0, uv.xy);
 	float x = abs(effect-.5);
 	color.rgb = (color.rrr*x - color.bbb*x + color.bbb*(1.-x))*.3;
-}`)
+}`, [NORM])
 const particles = new Float32Array(100)
 for(let i = 0; i &lt; particles.length; i++)
 	particles[i] = Math.random()
@@ -164,7 +164,7 @@ for(let i = 0; i &lt; particles.length; i++)
 const additiveBlend = Blend(ONE, ADD, ONE) // src*1 + dst*1
 function drawParticles(subCtx, h, dt){
 	const mesh = Mesh()
-	subCtx.useShader(particleShader)
+	subCtx.shader = particleShader
 	// Go left
 	mesh.translate(-202,0)
 	let prevY = 0
@@ -176,7 +176,8 @@ function drawParticles(subCtx, h, dt){
 		particles[i] = (pos+dt/2)%1
 	}
 	subCtx.translate(0,h/2+8)
-	subCtx.draw(mesh, cat, _, additiveBlend)
+	subCtx.blend = additiveBlend
+	subCtx.draw(mesh, cat)
 }
 	</code-area>
 	<iframe sandbox="allow-scripts" id="sandboxi"></iframe>
@@ -203,7 +204,7 @@ flowerTex.fromSrc('./flower.png', Formats.R32)
 <li>Texture customization (wrap mode, filtering, mipmaps):</li>
 <code-area lang="js" disabled>
 flowerTex.fromSrc('./flower.png', _, PIXELATED | REPEAT)
-flowerTex.options(REPEAT_X | REPEAT_MIRRORED_Y | MIPMAPS | UPSCALE_PIXELATED)
+flowerTex.options = REPEAT_X | REPEAT_MIRRORED_Y | MIPMAPS | UPSCALE_PIXELATED
 </code-area><br>
 <li>Draw to other targets or textures:</li>
 <code-area lang="js" disabled>
@@ -230,8 +231,8 @@ ctx.draw(...)
 const sh = Shader(`void main(){
 	color = texture(tex0, uv.xy);
 	if(color.a &lt; .5) discard;
-}`)
-ctx.useShader(sh)
+}`, [NORM])
+ctx.shader = sh
 </code-area><br>
 <li>Meshes, allowing fast bulk-drawing of thousands or millions of sprites:</li>
 <code-area lang="js" disabled>
@@ -253,11 +254,10 @@ function everyFrame(){
 const sh = Shader(`void main(){
 	// tint is one such custom-use property
 	color = texture(tex0, uv.xy) * tint;
-}`)
-ctx.useShader(sh)
+}`, [NORM])
+ctx.shader = sh
 const msh = Mesh()
-const tint = [1, 0, 0, 1]
-msh.addRect(0, 0, 100, 100, _, _, tint[0], tint[1], tint[2], tint[3])
+msh.addRect(0, 0, 100, 100, _, _, /*rgba*/ 1, 0, 0, 1)
 ...
 
 ctx.draw(msh, flowerTex)
@@ -275,26 +275,27 @@ worker.onmessage = ({data}) => {
 </code-area><br>
 <li>Stencil buffer access for clipping:</li>
 <code-area lang="js" disabled>
-ctx.draw(clipShape, _, DONT_DRAW | SET_ONE)
+ctx.draw(clipShape, _, DONT_DRAW | SET)
 // New mesh will only be drawn where it would intersect with clipShape
-ctx.draw(mesh, _, RGBA | IF_ZERO)
+ctx.draw(mesh, _, RGBA | IF_UNSET)
 </code-area><br>
 <li>Customizable blend algorithms:</li>
 <code-area lang="js" disabled>
 // dst = src*(1-dst.a) + dst*1
 const additiveBlendBehind = Blend(ONE_MINUS_DST_ALPHA, ADD, ONE)
-ctx.draw(mesh, flowerTex, RGBA, additiveBlendBehind)
+ctx.blend = additiveBlendBehind
+ctx.draw(mesh, flowerTex)
 // or a prebuilt one
-ctx.draw(mesh, flowerTex, RGBA, Blend.REPLACE)
+ctx.blend = Blend.REPLACE
+ctx.draw(mesh, flowerTex)
 </code-area><br>
 <li>8 textures and 6 uniforms per draw operation:</li>
 <code-area lang="js" disabled>
-ctx.setU(1, 2, 3, 4) // accessible as `uniform vec4 u;` in shader
-ctx.setST(5, 6) // accessible as `uniform float s, t;` in shader
-
+const s = 1, t = 2, // accessible as `uniform float s, t;` in shader
+	u = [7,8,9,10] // accessible as `uniform vec4 u;` in shader
 // Textures available as tex0,tex1,...,tex15 in shader
-// If your shader uses a specific type make sure to pass the correct one in .draw()!
-ctx.draw(mesh, [tex0, tex1, tex2, tex3, ...])
+// If your shader uses a specific texture type make sure to pass the correct one in .draw()!
+ctx.draw(mesh, [tex0, tex1, tex2, tex3, ...], s, t, u[0], u[1], u[2], u[3])
 </code-area><br>
 Thank you for coming to my TED talk.
 
@@ -332,7 +333,7 @@ Thank you for coming to my TED talk.
 		<m>Target</m>(texture: <t refto="texture">Texture</t>, layer?: <t>int</t>, stencil?: <t>boolean</t>) -> <t refto="target">Target</t></k>
 		<hr>
 		Construct a new shader from GLSL source code. See <b refto="shaders">its section</b> for more information.
-		<k><m>Shader</m>(glslSource: <t>string</t>, textureTypes: <t>Array</t>&lt;<d>FIXED</d>? | <d>FLOAT</d>? | <d>UINT</d>? | <d>LAYERED</d>?>, outputType: <d>FIXED</d>? | <d>FLOAT</d>? | <d>UINT</d>?) -> <t refto="shaders">Shader</t></k>
+		<k><m>Shader</m>(glslSource: <t>string</t>, textureTypes: <t>Array</t>&lt;<d>NORM</d>? | <d>FLOAT</d>? | <d>UINT</d>? | <d>LAYERED</d>?>, outputType: <d>NORM</d>? | <d>FLOAT</d>? | <d>UINT</d>?) -> <t refto="shaders">Shader</t></k>
 		<hr>
 		Represent a uv (A uv is a location within a texture, think a crop rectangle for a texture). See <b refto="uv">its section</b> for more information.
 		<k><m>uv</m>(x?: <t>number</t>, y?: <t>number</t>, w?: <t>number</t>, h?: <t>number</t>, layer?: <t>number</t>) -> <t refto="uv">UV</t></k>
@@ -372,7 +373,7 @@ Thank you for coming to my TED talk.
 		<k>
 			<o>// Constants used by third argument to (Target).draw()</o><br>
 			<d>R</d>, <d>G</d>, <d>B</d>, <d>A</d>, <d>RGB</d> = R|G|B, <d>RGBA</d> = R|G|B|A<br>
-			<d>IF_ONE</d>, <d>IF_ZERO</d>, <d>DONT_DRAW</d><br>
+			<d>IF_SET</d>, <d>IF_UNSET</d>, <d>DONT_DRAW</d><br>
 			<d>UNSET</d>, <d>SET</d>, <d>FLIP</d><br>
 			<d>DITHERING</d><br><br>
 			<o>// Constants used by BlendMultiplier</o><br>
@@ -407,6 +408,8 @@ Thank you for coming to my TED talk.
 			<d>REPEAT_X</d>, <d>REPEAT_Y</d>, <d>REPEAT</d> = REPEAT_X|REPEAT_Y<br>
 			<d>REPEAT_MIRRORED_X</d>, <d>REPEAT_MIRRORED_Y</d><br>
 			<d>REPEAT_MIRRORED</d> = REPEAT_MIRRORED_X|REPEAT_MIRRORED_Y
+			<o>// Constants used by Shader() input/output type</o><br>
+			<d>NORM</d>, <d>FLOAT</d>, <d>UINT</d><br>, <d>LAYERED</d><br>
 		</k>
 	</div>
 	<div id="texture">
@@ -434,8 +437,8 @@ Thank you for coming to my TED talk.
 		Initialise the texture as empty, same as the constructor
 		<k>.<m>of</m>(width?: <t>int</t>, height?: <t>int</t>, layers?: <t>int</t>, format?: <n>valueof</n> <t refto="constants">Formats</t>, options?: <t>TextureOptions</t>) -> <t>this</t></k>
 		<hr>
-		Set the texture options for this texture</c>
-		<k>.<m>setOptions</m>(options?: <t>TextureOptions</t>) -> <t>this</t></k>
+		Get or set the texture options for this texture</c>
+		<k><n>get</n>/<n>set</n> options: <t>TextureOptions</t></k>
 		<hr>
 		Convert a sub-rectangle specified in pixel coordinates from the top-left corner into a <c refto="uv">UV</c> (UV coordinates are (0,0)-(1,1) from the bottom left)<br>
 		Note that this function is only useful once the image has been fully loaded, as the actual width and height of the texture are required to perform the conversion
@@ -447,12 +450,12 @@ Thank you for coming to my TED talk.
 		Put some pixels at a sub-rectangle in the texture, from a <c>TypedArray</c>.<br>
 		This method is only applicable for flat textures (i.e <c>.layers == 0</c>).<br>
 		If specified, format must be compatible with the texture's format or the operation will fail
-		<k>.<m>putData</m>(x?: <t>int</t>, y?: <t>int</t>, width?: <t>int</t>, height?: <t>int</t>, data: <t>Uint8Array</t> | <t>Uint16Array</t> | <t>Uint32Array</t> | <t>Float32Array</t>, format?: <n>valueof</n> <t refto="constants">Formats</t>)</k>
+		<k>.<m>putData</m>(data: <t>Uint8Array</t> | <t>Uint16Array</t> | <t>Uint32Array</t> | <t>Float32Array</t>, x?: <t>int</t>, y?: <t>int</t>, width?: <t>int</t>, height?: <t>int</t>, format?: <n>valueof</n> <t refto="constants">Formats</t>)</k>
 		<hr>
 		Put some pixels at a sub-rectangle in the texture, from a <c>TypedArray</c>.<br>
 		This method is only applicable for layered textures (i.e <c>.layers > 0</c>).<br>
 		If specified, format must be compatible with the texture's format or the operation will fail
-		<k>.<m>putDataLayers</m>(x?: <t>int</t>, y?: <t>int</t>, layer?: <t>int</t>, width?: <t>int</t>, height?: <t>int</t>, depth?: <t>int</t>, data: <t>Uint8Array</t> | <t>Uint16Array</t> | <t>Uint32Array</t> | <t>Float32Array</t>, format?: <n>valueof</n> <t refto="constants">Formats</t>)</k>
+		<k>.<m>putDataLayers</m>(data: <t>Uint8Array</t> | <t>Uint16Array</t> | <t>Uint32Array</t> | <t>Float32Array</t>, x?: <t>int</t>, y?: <t>int</t>, layer?: <t>int</t>, width?: <t>int</t>, height?: <t>int</t>, depth?: <t>int</t>, format?: <n>valueof</n> <t refto="constants">Formats</t>)</k>
 		<hr>
 		Delete the texture. Its resources will be freed once any draw operations making use of the texture are completed.<br>The texture cannot be used, modified or re-initialised again
 		<k>.<m>delete</m>()</k>
@@ -551,15 +554,25 @@ Thank you for coming to my TED talk.
 		The default value for <c>drawFlags</c> is <c>R | G | B | A</c> (or short, <c>RGBA</c>).<br>
 		The default value for <c>blend</c> is <c>Blend(ONE, ADD, ONE_MINUS_SRC_ALPHA)</c>.<br>
 		If the provided mesh has more sprites than <c>maxSprites</c>, then only the first <c>maxSprites</c> sprites of the mesh will be drawn
-		<k>.<m>draw</m>(mesh: <t refto="mesh">Mesh</t> | <t refto="meshupload">MeshUpload</t> | <t>Float32Array</t>, textures?: <t refto="texture">Texture</t> | <t>Array</t>&lt;<t refto="texture">Texture</t>>, drawFlags?: <t>DrawFlags</t>, blend?: <t refto="blend">Blend</t>, maxSprites?: <t>int</t>)</k>
+		<k>.<m>draw</m>(mesh: <t refto="mesh">Mesh</t> | <t refto="meshupload">MeshUpload</t> | <t>Float32Array</t>, textures?: <t refto="texture">Texture</t> | <t>Array</t>&lt;<t refto="texture">Texture</t>>, maxSprites?: <t>int</t>)</k>
 		<hr>
+		Set draw mask options for future draw calls on this target subview<br>
 		<c>R</c>, <c>G</c>, <c>B</c> and <c>A</c> enable drawing to the respective color channels.<br>
-		<c>IF_ONE</c> and <c>IF_ZERO</c> limit drawing to only where the stencil buffer is one or zero repectively.<br>
+		<c>IF_SET</c> and <c>IF_UNSET</c> limit drawing to only where the stencil buffer is set or unset repectively.<br>
 		<c>NO_DRAW</c> forces the stencil test to always fail, resulting in no colors drawn.<br>
 		<c>SET</c> and <c>UNSET</c> will set/unset the stencil value wherever something is drawn.<br>
-		<c>FLIP</c> is the same as <c>SET | UNSET</c> and will set the stencil value to one where it was zero and to zero where it was one.<br>
+		<c>FLIP</c> is the same as <c>SET | UNSET</c> and sets the stencil value where it was unset and unsets where it was set.<br>
+		Stencil operations run everywhere the mesh is drawn. If more than one sprite in the mesh overlap, the specified stencil operation will be executed more than once<br>
 		<c>DITHERING</c> will try to enable dithering to create smoother gradients, especially for low precision formats. This is a hint and is not guaranteed to have an effect on all devices
-		<k><n>type</n> <d>DrawFlags</d> = <d>R</d>? | <d>G</d>? | <d>B</d>? | <d>A</d>? | <d>RGB</d>? | <d>RGBA</d>? | <d>IF_ONE</d>? | <d>IF_ZERO</d>? | <d>SET</d>? | <d>UNSET</d>? | <d>FLIP</d>? | <d>NO_DRAW</d>? | <d>DITHERING</d>?<br></k>
+		<k><n>get</n>/<n>set</n> .<d>mask</d>: <d>R</d>? | <d>G</d>? | <d>B</d>? | <d>A</d>? | <d>RGB</d>? | <d>RGBA</d>? | <d>IF_SET</d>? | <d>IF_UNSET</d>? | <d>SET</d>? | <d>UNSET</d>? | <d>FLIP</d>? | <d>NO_DRAW</d>? | <d>DITHERING</d>?</k>
+		<hr>
+		Set the blend operation for all future draw calls on this target subview
+		(See <b refto="subview">more about subviews</b>)
+		<k><n>get</n>/<n>set</n> .<d>blend</d>: <t refto="blend">Blend</t></k>
+		<hr>
+		Set the shader for all future draw calls on this target subview
+		(See <b refto="subview">more about subviews</b>; <b refto="shader">more on shaders & uniforms</b>)
+		<k><n>get</n>/<n>set</n> .<d>shader</d>: <t refto="shader">Shader</t></k>
 		<hr>
 		Change the texture output of the target. All future draw operations will draw to this texture (at the specified layer if the texture is layered)<br>
 		This method is invalid on the main target (the one returned by <c>setTargetCanvas/autoCanvas(...)</c>)
@@ -590,18 +603,7 @@ Thank you for coming to my TED talk.
 		<hr>
 		Clears the stencil buffer to zero
 		<k>.<m>clearStencil</m>()</k>
-		<hr>
-		Use a shader for all future draw calls performed on this specific sub-view of the target.<br>
-		(See <b refto="subview">more about subviews</b>; <b refto="shader">more on shaders & uniforms</b>)
-		<k>.<m>useShader</m>(shader?: <t refto="shader">Shader</t>)</k>
-		<hr>
-		Sets the <c>u</c> uniform for all future draw calls performed on this specific sub-view of the target.<br>
-		(See <b refto="subview">more about subviews</b>; <b refto="shader">more on shaders & uniforms</b>)
-		<k>.<m>setU</m>(ux: <t>number</t>, uy: <t>number</t>, uz: <t>number</t>, uw: <t>number</t>)</k>
-		<hr>
-		Sets the <c>s</c> and <c>t</c> uniform for all future draw calls performed on this specific sub-view of the target.<br>
-		(See <b refto="subview">more about subviews</b>; <b refto="shader">more on shaders & uniforms</b>)
-		<k>.<m>setST</m>(s: <t>number</t>, t: <t>number</t>)</k>
+		<hr>		
 		<hr>
 		Delete the target and its resources. Does not delete its texture output (if it had one)
 		<k>.<m>delete</m>()</k>
@@ -616,19 +618,19 @@ Thank you for coming to my TED talk.
 	<div id="shader">
 		Create a shader. Do not use <c>new</c>.<br>
 		When this shader is in use, the <c>main()</c> GLSL function will be invoked for every drawn pixel. It must write a color value to <c>color</c>, or execute <c>discard;</c> to indicate that the pixel is to be abandoned and nothing is to be drawn. Do not put a version header or uniforms inside your shader source, they are added for you by the library
-		<k><n>constructor</n>(glslSource: <t>string</t>, textureTypes: <t>Array</t>&lt;<d>FIXED</d>? | <d>FLOAT</d>? | <d>UINT</d>? | <d>LAYERED</d>?>, outputType: <d>FIXED</d>? | <d>FLOAT</d>? | <d>UINT</d>?) -> <t>Shader</t></k>
+		<k><n>constructor</n>(glslSource: <t>string</t>, textureTypes: <t>Array</t>&lt;<d>NORM</d>? | <d>FLOAT</d>? | <d>UINT</d>? | <d>LAYERED</d>?>, outputType: <d>NORM</d>? | <d>FLOAT</d>? | <d>UINT</d>?) -> <t>Shader</t></k>
 		<hr>
 		Example of a valid shader:<br>(this is the default shader)
 		<k><m>Shader</m>(<t style="color:#ea2">`</t><n>void</n> main(){<br>
 			&nbsp;&nbsp;<o>// Texture 0 is a flat texture therefore texture() expects a vec2 coordinate</o><br>
 			&nbsp;&nbsp;<d>color</d> = <m>texture</m>(<d>tex0</d>, <d>uv</d>.xy) * (<d style="color:#ae2">1.0</d> - <d>tint</d>);<br>
-		}<t style="color:#ea2">`</t>, [<d>FIXED</d>], <d>FIXED</d>)</k>
+		}<t style="color:#ea2">`</t>, [<d>NORM</d>], <d>NORM</d>)</k>
 		<hr>
 		Example of default shader but for layered RGBA8 (uint) textures:<br>(this is the default shader)
 		<k><m>Shader</m>(<t style="color:#ea2">`</t><n>void</n> main(){<br>
 			&nbsp;&nbsp;<o>// Texture 0 is a flat texture therefore texture() expects a vec2 coordinate</o><br>
 			&nbsp;&nbsp;<d>color</d> = <m>vec4</m>(<m>texture</m>(<d>tex0</d>, <d>uv</d>.xyz))/<d style="color:#ae2">255.0</d> * (<d style="color:#ae2">1.0</d> - <d>tint</d>);<br>
-		}<t style="color:#ea2">`</t>, [<d>UINT</d> | <d>LAYERED</d>], <d>FIXED</d>)</k>
+		}<t style="color:#ea2">`</t>, [<d>UINT</d> | <d>LAYERED</d>], <d>NORM</d>)</k>
 		<hr>
 		Values exposed in the GLSL shader:
 		<k>

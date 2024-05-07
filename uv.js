@@ -31,14 +31,21 @@ NS.Texture = (w=0,h=0,l=0,format=NS.Formats.RGBA,options=defaultOptions) => {
 	return t
 }
 NS.Texture.setDefaultOptions = o => defaultOptions = o
-const currentlyBound = new Array(16).fill(null)
+const currentlyBound = new Array(32).fill(null)
 let currentUnit = 0
-function bindt(t){
+let avail=0
+function bindt(t,b){
 	t.unit = currentUnit+(t.layers?4294967296:0)
-	const b = t.unit<4294967296?GL.TEXTURE_2D:GL.TEXTURE_2D_ARRAY
 	let o = currentlyBound[currentUnit]
 	if(o) (o.unit!=t.unit)&&(gl.bindTexture(39419-b, null)), o.unit = -1, currentlyBound[currentUnit]=null
 	gl.bindTexture(b, currentlyBound[currentUnit] = t)
+	if((t.mipmap&3)==3) gl.generateMipmap(b)
+}
+function bindq(t){
+	const b=t.layers?GL.TEXTURE_2D_ARRAY:GL.TEXTURE_2D
+	if(t.unit>=0) return gl.activeTexture(33984+(currentUnit=t.unit|0)),b
+	if(currentUnit!=avail)gl.activeTexture(33984+(currentUnit=avail))
+	bindt(t,b)
 	return b
 }
 const BITMAP_OPTS = {imageOrientation: 'flipY', premultiplyAlpha: 'none'}
@@ -47,10 +54,15 @@ const TEX_PROTO = class{
 	fromSrc(src,o){this.from(typeof src=='string'?fetch(src,o).then(a=>a.blob()):src);return this}
 	from(thing, format = NS.Formats.RGBA, options = defaultOptions){
 		if(typeof thing != 'object') return
-		this.format = format; this.options = options
+		this.format = format; this.o = options
 		if(thing instanceof Blob) thing = createImageBitmap(thing, BITMAP_OPTS)
 		if(thing.then) return thing.then(thing => this.from(thing, format, options))
-		bindt(this)
+		if(this.layers&&this.unit>=0){
+			currentUnit!=(currentUnit=this.unit)&&gl.activeTexture(33984+currentUnit)
+			gl.bindTexture(this.layers?GL.TEXTURE_2D_ARRAY:GL.TEXTURE_2D,currentlyBound[currentUnit]=null)
+			this.unit=-1
+		}
+		this.layers=0; bindq(this)
 		const {0: A, 1: B, 2: C} = format
 		if(!preprocess) gl.pixelStorei(37440,1), gl.pixelStorei(37441,1), preprocess = true
 		gl.texImage2D(GL.TEXTURE_2D, 0, A, this.width = thing.width, this.height = thing.height, 0, B, C, thing)
@@ -67,27 +79,32 @@ const TEX_PROTO = class{
 		if(thing instanceof Blob) thing = createImageBitmap(thing, BITMAP_OPTS)
 		if(thing.then) return thing.then(thing => this.put(thing, x, y, l))
 		if(!preprocess) gl.pixelStorei(37440,1), gl.pixelStorei(37441,1), preprocess = true
-		if(bindt(this)==GL.TEXTURE_2D) gl.texSubImage2D(GL.TEXTURE_2D, 0, x, y, thing.width, thing.height, this.format[1], this.format[2], thing)
-		else gl.texSubImage3D(GL.TEXTURE_2D_ARRAY, 0, x, y, z, thing.width, thing.height, 1, this.format[1], this.format[2], thing)
+		const b = bindq(this)
+		if(b == GL.TEXTURE_2D_ARRAY) gl.texSubImage3D(b, 0, x, y, z, thing.width, thing.height, 1, this.format[1], this.format[2], thing)
+		else gl.texSubImage2D(b, 0, x, y, thing.width, thing.height, this.format[1], this.format[2], thing)
 		this.mipmap|=1
 	}
-	setOptions(options = defaultOptions){
-		bindt(this)
-		this.options = options
-		const b = this.layers?GL.TEXTURE_2D_ARRAY:GL.TEXTURE_2D
+	get options(){return this.o}
+	set options(options){
+		const b = bindq(this)
+		this.o = options ||= defaultOptions
 		gl.texParameteri(b, GL.TEXTURE_MAG_FILTER, (~options&1)+GL.NEAREST)
 		const f = (~options>>1)&3
 		if(options&8) gl.texParameteri(b, GL.TEXTURE_MIN_FILTER, GL.NEAREST_MIPMAP_NEAREST + f),this.mipmap&=-3
 		else gl.texParameteri(b, GL.TEXTURE_MIN_FILTER, (f&1)+GL.NEAREST),this.mipmap|=2
 		gl.texParameteri(b, GL.TEXTURE_WRAP_S, options&32?GL.MIRRORED_REPEAT:options&16?GL.REPEAT:GL.CLAMP_TO_EDGE)
 		gl.texParameteri(b, GL.TEXTURE_WRAP_T, options&128?GL.MIRRORED_REPEAT:options&64?GL.REPEAT:GL.CLAMP_TO_EDGE)
-		return this
 	}
 	of(width = 0, height = 0, layers = 0, format = NS.Formats.RGBA, options = defaultOptions){
+		if((!this.layers^!layers)&&this.unit>=0){
+			currentUnit!=(currentUnit=this.unit)&&gl.activeTexture(33984+currentUnit)
+			gl.bindTexture(this.layers?GL.TEXTURE_2D_ARRAY:GL.TEXTURE_2D,currentlyBound[currentUnit]=null)
+			this.unit=-1
+		}
 		this.layers = layers
-		const b = bindt(this)
+		const b = bindq(this)
 		const {0: A, 1: B, 2: C} = format
-		this.format = format; this.options = options
+		this.format = format; this.o = options
 		if(layers) gl.texImage3D(b, 0, A, this.width = width, this.height = height, layers, 0, B, C, null)
 		else gl.texImage2D(b, 0, A, this.width = width, this.height = height, 0, B, C, null)
 		gl.texParameteri(b, GL.TEXTURE_MAG_FILTER, (~options&1)+GL.NEAREST)
@@ -98,14 +115,14 @@ const TEX_PROTO = class{
 		gl.texParameteri(b, GL.TEXTURE_WRAP_T, options&128?GL.MIRRORED_REPEAT:options&64?GL.REPEAT:GL.CLAMP_TO_EDGE)
 		return this
 	}
-	putData(sx=0, sy=0, sw, sh, data, format=this.format){
-		bindt(this)
+	putData(data, sx=0, sy=0, sw=this.width, sh=this.height, format=this.format){
+		if(bindq(this) == GL.TEXTURE_2D_ARRAY) return
 		if(preprocess) gl.pixelStorei(37440,0), gl.pixelStorei(37441,0), preprocess = false
 		gl.texSubImage2D(GL.TEXTURE_2D, 0, sx, sy, sw, sh, format[1], format[2], data)
 		this.mipmap|=1
 	}
-	putDataLayers(sx=0, sy=0, sz=0, sw, sh, sd, data, format=this.format){
-		bindt(this)
+	putDataLayers(data, sx=0, sy=0, sz=0, sw=this.width, sh=this.height, sd=this.depth, format=this.format){
+		if(bindq(this) == GL.TEXTURE_2D) return
 		if(preprocess) gl.pixelStorei(37440,0), gl.pixelStorei(37441,0), preprocess = false
 		gl.texSubImage2D(GL.TEXTURE_2D_ARRAY, 0, sx, sy, sz, sw, sh, sd, format[1], format[2], data)
 		this.mipmap|=1
@@ -113,11 +130,11 @@ const TEX_PROTO = class{
 	uv(x=0,y=0,w=this.width,h=this.height,l=0){ return {x:x/this.width,y:(1-y+h)/this.height,w:w/this.width,h:h/this.height,l,sub} }
 	delete(){
 		gl.deleteTexture(this)
-		const u=this.unit
+		const u=this.unit,b=u<4294967296?GL.TEXTURE_2D:GL.TEXTURE_2D_ARRAY
 		if(u){
 			if(currentUnit!=(currentUnit=u|0)) gl.activeTexture(33984+currentUnit)
 			this.unit=-1
-			gl.bindTexture(u<4294967296?3553:35866,currentlyBound[u&15]=null)
+			gl.bindTexture(b,currentlyBound[u&15]=null)
 		}
 	}
 }.prototype
@@ -269,12 +286,12 @@ WebGLVertexArrayObject.prototype.delete = function(){
 const mat2x3 = new Float32Array(6)
 let fb = null
 let mainStencil = 0
-let pmask = 285217039
+let pmask = 0
 let ux=0, uy=0, uz=0, uw=0, vx=0, vy=0
 let warns = -1
-let vpw = 0, vph = 0
+let vpw = 0, vph = 0, os=0
 class Target{
-	fb;#a;#b;#c;#d;#e;#f;#ux;#uy;#uz;#uw;#s;#t
+	fb;p;m;#a;#b;#c;#d;#e;#f
 	get width(){return (this.fb||gl.canvas).width}
 	get height(){return (this.fb||gl.canvas).height}
 	get texture(){return this.fb?.texture}
@@ -291,8 +308,9 @@ class Target{
 	}
 	copyTo(tex, dx=0, dy=0, dl=0, sx=0, sy=0, sw=this.width, sh=this.height){
 		if(fb!=this.fb) gl.bindFramebuffer(GL.FRAMEBUFFER, fb = this.fb)
-		bindt(tex) == GL.TEXTURE_2D ? gl.copyTexSubImage2D(GL.TEXTURE_2D, 0, dx, dy, sx, sy, sw, sh)
-		: gl.copyTexSubImage3D(GL.TEXTURE_2D_ARRAY, 0, dx, dy, dl, sx, sy, sw, sh)
+		const b = bindq(tex)
+		b == GL.TEXTURE_2D ? gl.copyTexSubImage2D(b, 0, dx, dy, sx, sy, sw, sh)
+		: gl.copyTexSubImage3D(b, 0, dx, dy, dl, sx, sy, sw, sh)
 		tex.mipmap|=1
 	}
 	resize(width = this.width, height = this.height, format = NS.Formats.RGBA){
@@ -342,11 +360,9 @@ class Target{
 		!tex.layers ? gl.framebufferTexture2D(GL.READ_FRAMEBUFFER, GL.COLOR_ATTACHMENT0, GL.TEXTURE_2D, tex, 0)
 		: gl.framebufferTextureLayer(GL.READ_FRAMEBUFFER, GL.COLOR_ATTACHMENT0, tex, 0, l)
 	}
-	constructor(fb,p,a=1,b=0,c=0,d=1,e=0,f=0,ux=0,uy=0,uz=0,uw=0,vx=0,vy=0){
-		this.fb=fb; this.p=p
+	constructor(fb,p,m=581575183,a=1,b=0,c=0,d=1,e=0,f=0){
+		this.fb=fb; this.p=p; this.m=m
 		this.#a=a;this.#b=b;this.#c=c;this.#d=d;this.#e=e;this.#f=f
-		this.#ux=ux;this.#uy=uy;this.#uz=uz;this.#uw=uw
-		this.#s=vx;this.#t=vy
 	}
 	translate(x=0,y=0){ this.#e+=x*this.#a+y*this.#c;this.#f+=x*this.#b+y*this.#d }
 	scale(x=1,y=x){ this.#a*=x; this.#b*=x; this.#c*=y; this.#d*=y }
@@ -372,10 +388,10 @@ class Target{
 		this.#c=tc*x-this.#d*y;this.#d=tc*y+this.#d*x
 	}
 	getTransform(){ return {a: this.#a, b: this.#b, c: this.#c, d: this.#d, e: this.#e, f: this.#f} }
-	new(a=1,b=0,c=0,d=1,e=0,f=0){return new Target(this.fb,defaultProgram,a,b,c,d,e,f)}
-	reset(a=1,b=0,c=0,d=1,e=0,f=0,ux=0,uy=0,uz=0,uw=0,vx=0,vy=0){this.#a=a;this.#b=b;this.#c=c;this.#d=d;this.#e=e;this.#f=f;this.#ux=ux;this.#uy=uy;this.#uz=uz;this.#uw=uw;this.#s=vx;this.#t=vy;this.p=defaultProgram}
+	new(a=1,b=0,c=0,d=1,e=0,f=0){return new Target(this.fb,defaultProgram,581575183,a,b,c,d,e,f)}
+	reset(a=1,b=0,c=0,d=1,e=0,f=0){this.#a=a;this.#b=b;this.#c=c;this.#d=d;this.#e=e;this.#f=f;this.p=defaultProgram;this.m=581575183}
 	resetTo(t){
-		this.#a=t.#a;this.#b=t.#b;this.#c=t.#c;this.#d=t.#d;this.#e=t.#e;this.#f=t.#f;this.#ux=t.#ux;this.#uy=t.#uy;this.#uz=t.#uz;this.#uw=t.#uw;this.#s=t.#s;this.#t=t.#t;this.p=t.p
+		this.#a=t.#a;this.#b=t.#b;this.#c=t.#c;this.#d=t.#d;this.#e=t.#e;this.#f=t.#f;this.p=t.p;this.m=t.m
 	}
 	box(x=0,y=0,w=1,h=w){ this.#e+=x*this.#a+y*this.#c; this.#f+=x*this.#b+y*this.#d; this.#a*=w; this.#b*=w; this.#c*=h; this.#d*=h }
 	to(x, y){if(typeof x=='object')({x,y}=x);return {x:this.#a*x+this.#c*y+this.#e,y:this.#b*x+this.#d*y+this.#f}}
@@ -387,25 +403,23 @@ class Target{
 			y: (y*a - y*b + b*this.#e - a*this.#f)/det
 		}
 	}
-	sub(){ return new Target(this.fb,this.p,this.#a,this.#b,this.#c,this.#d,this.#e,this.#f,this.#ux,this.#uy,this.#uz,this.#uw,this.#s,this.#t) }
-	useShader(p=defaultProgram){ this.p = p }
-	setU(ux=0,uy=0,uz=0,uw=0){this.#ux=ux;this.#uy=uy;this.#uz=uz;this.#uw=uw}
-	setST(s=0,t=0){this.#s=s;this.#t=t}
+	sub(){ return new Target(this.fb,this.p,this.m,this.#a,this.#b,this.#c,this.#d,this.#e,this.#f) }
+	set shader(p){ this.p = p||defaultProgram }
+	get shader(){return this.p}
+	get blend(){return this.m>>>9}
+	set blend(a){this.m=this.m&511|a<<9}
+	get mask(){return this.m&511}
+	set mask(a){this.m=this.m&-512|a&511}
 	clear(r = 0, g = 0, b = 0, a = 0){
 		gl.clearColor(r, g, b, a)
-		pmask = (pmask&240)|(r==r)|(g==g)<<1|(b==b)<<2|(a==a)<<3
-		gl.colorMask(pmask&1,pmask&2,pmask&4,pmask&8)
 		const q = this.fb?this.fb.stencil=(this.fb.stencil+1)&7:mainStencil=(mainStencil+1)&7
 		if(fb!=this.fb) gl.bindFramebuffer(GL.FRAMEBUFFER, fb = this.fb)
 		const W = (fb||gl.canvas).width, H = (fb||gl.canvas).height
 		if(!W|!H) return; if(vpw!=W||vph!=H) gl.viewport(0,0,vpw=W,vph=H)
-		gl.clear(GL.COLOR_BUFFER_BIT | (q?0:(gl.stencilMask(255),GL.STENCIL_BUFFER_BIT)))
-		gl.stencilMask(1<<q)
+		gl.clear(GL.COLOR_BUFFER_BIT | (q?0:(gl.stencilMask(os=255),GL.STENCIL_BUFFER_BIT)))
 	}
 	clearColor(r = 0, g = 0, b = 0, a = 0){
 		gl.clearColor(r, g, b, a)
-		pmask = (pmask&240)|(r==r)|(g==g)<<1|(b==b)<<2|(a==a)<<3
-		gl.colorMask(pmask&1,pmask&2,pmask&4,pmask&8)
 		if(fb!=this.fb) gl.bindFramebuffer(GL.FRAMEBUFFER, fb = this.fb)
 		const W = (fb||gl.canvas).width, H = (fb||gl.canvas).height
 		if(!W|!H) return; if(vpw!=W||vph!=H) gl.viewport(0,0,vpw=W,vph=H)
@@ -413,17 +427,15 @@ class Target{
 	}
 	clearStencil(){
 		const a = this.fb?this.fb.stencil=(this.fb.stencil+1)&7:mainStencil=(mainStencil+1)&7
-		gl.stencilMask(1<<a)
 		if(!a){
 			const W = (fb||gl.canvas).width, H = (fb||gl.canvas).height
 			if(!W|!H) return; if(vpw!=W||vph!=H) gl.viewport(0,0,vpw=W,vph=H)
 			if(fb!=this.fb) gl.bindFramebuffer(GL.FRAMEBUFFER, fb = this.fb)
-			gl.stencilMask(255)
+			gl.stencilMask(os=255)
 			gl.clear(GL.STENCIL_BUFFER_BIT)
 		}
-		gl.stencilMask(1<<a)
 	}
-	draw(buf, textures, mask = 15, blend = 1135889, size=Infinity){
+	draw(buf, textures, s=0, t=0, u1=0, u2=0, u3=0, u4=0, size=Infinity){
 		if(fb!=this.fb) gl.bindFramebuffer(GL.FRAMEBUFFER, fb = this.fb)
 		const W = (fb||gl.canvas).width, H = (fb||gl.canvas).height
 		if(!W|!H) return
@@ -432,36 +444,34 @@ class Target{
 		mat2x3[0] = this.#a*2; mat2x3[3] = this.#b*2; mat2x3[1] = this.#c*2
 		mat2x3[4] = this.#d*2; mat2x3[2] = this.#e*2-1; mat2x3[5] = this.#f*2-1
 		gl.uniformMatrix2x3fv(curProgram.muni, false, mat2x3)
-		if(ux!=this.#ux||uy!=this.#uy||uz!=this.#uz||uw!=this.#uw)
-			gl.uniform4f(curProgram.uni1, ux=this.#ux, uy=this.#uy, uz=this.#uz, uw=this.#uw)
-		if(vx!=this.#s) gl.uniform1ui(curProgram.uni2, vx=this.#s)
-		if(vy!=this.#t) gl.uniform1ui(curProgram.uni3, vy=this.#t)
-		mask = mask&2281701631|blend<<8
-		if((pmask^mask)&15) gl.colorMask(mask&1,mask&2,mask&4,mask&8)
-		if((pmask^mask)&240){
+		if(ux!=u1||uy!=u2||uz!=u3||uw!=u4)
+			gl.uniform4f(curProgram.uni1, ux=u1, uy=u2, uz=u3, uw=u4)
+		if(vx!=s) gl.uniform1ui(curProgram.uni2, vx=s)
+		if(vy!=t) gl.uniform1ui(curProgram.uni3, vy=t)
+		const mask = this.m, s = fb?fb.stencil:mainStencil, diff = pmask^mask^(s!=os)<<4
+		if(diff&15) gl.colorMask(mask&1,mask&2,mask&4,mask&8)
+		if(diff&240){
 			if(mask&240){
-				const s = fb?fb.stencil:mainStencil
 				if(!(pmask&240)) gl.enable(GL.STENCIL_TEST)
-				if((mask^pmask)&240){
-					gl.stencilFunc(mask&32?mask&16?GL.NEVER:GL.NOTEQUAL:mask&16?GL.EQUAL:GL.ALWAYS, 255, 1<<s)
-					const op = mask&128?mask&64?GL.INVERT:GL.REPLACE:mask&64?GL.ZERO:GL.KEEP
-					gl.stencilOp(op, op, op)
-				}
-			}else if(pmask&240) gl.disable(GL.STENCIL_TEST)
+				gl.stencilMask(1<<(os=s))
+				gl.stencilFunc(mask&32?mask&16?GL.NEVER:GL.NOTEQUAL:mask&16?GL.EQUAL:GL.ALWAYS, 255, 1<<s)
+				const op = mask&128?mask&64?GL.INVERT:GL.REPLACE:mask&64?GL.ZERO:GL.KEEP
+				gl.stencilOp(op, op, op)
+			}else gl.disable(GL.STENCIL_TEST)
 		}
-		if((pmask^mask)&1996488704) gl.blendEquationSeparate((mask>>24&7)+32773,(mask>>28&7)+32773)
-		if((pmask^mask)&16776960) gl.blendFuncSeparate((mask>>8&15)+766*!!(mask&3584), (mask>>16&15)+766*!!(mask&917504), (mask>>12&15)+766*!!(mask&57344), (mask>>20&15)+766*!!(mask&14680064))
-		if((mask^pmask)&134217728) if(mask&134217728) gl.enable(GL.DITHER); else gl.disable(GL.DITHER)
+		if(diff&-301989888) gl.blendEquationSeparate((mask>>25&7)+32773,(mask>>29&7)+32773)
+		if(diff&33553920) gl.blendFuncSeparate((mask>>9&15)+(mask&7168&&766), (mask>>17&15)+(mask&1835008&&766), (mask>>13&15)+(mask&114688&&766), (mask>>21&15)+(mask&29360128&&766))
+		if(diff&256) if(mask&256) gl.enable(GL.DITHER); else gl.disable(GL.DITHER)
 		pmask = mask
 		let tt = this.fb?.texture
 		if(Array.isArray(textures)){
 			if(textures.length < curProgram.tunis.length || textures.length>16) return void((warns&4)&&(warns&=-5,console.warn('.draw(): Shader expects '+curProgram.tunis.length+' texture(s)')))
-			let av = 65535
+			let av = -1
 			for(let i = 0; i < textures.length; i++){
 				const t = textures[i]
 				if(t==tt) return void((warns&8)&&(warns&=-9,console.warn('.draw(): Cannot use texture that is also being drawn to')))
 				if(t.unit > -1){
-					av &= -32769>>t.unit, gl.uniform1i(curProgram.tunis[i], t.unit)
+					av &= ~(1<<(31-t.unit)), gl.uniform1i(curProgram.tunis[i], t.unit)
 					if((t.mipmap&3)==3){
 			  			if(currentUnit!=(currentUnit=t.unit|0)) gl.activeTexture(GL.TEXTURE0+currentUnit)
 			  			gl.generateMipmap(t.layers?GL.TEXTURE_2D_ARRAY:GL.TEXTURE_2D)
@@ -471,25 +481,27 @@ class Target{
 			for(let i = 0; i < textures.length; i++){
 				const t = textures[i]
 				if(t.unit > -1) continue
-				currentUnit = Math.clz32(av)-16
-				av &= -32769>>currentUnit
+				currentUnit = Math.clz32(av)
+				av &= ~(1<<(31-currentUnit))
 				gl.activeTexture(GL.TEXTURE0+currentUnit)
 				gl.uniform1i(curProgram.tunis[i], currentUnit)
-				if((t.mipmap&3)==3) gl.generateMipmap(bindt(t)); else bindt(t)
+				bindt(t,t.layers?GL.TEXTURE_2D:GL.TEXTURE_2D_ARRAY)
 			}
+			avail = Math.clz32(av)
 		}else if(textures){
 			if(curProgram.tunis.length>1) return warns!=(warns&=-5)?console.warn('.draw(): Shader expects '+curProgram.tunis.length+' texture(s)'):void 0
 			if(textures==tt)return warns!=(warns&=-9)?console.warn('.draw(): Cannot use a texture that is also being drawn to'):void 0
 			if(textures.unit > -1){
 				gl.uniform1i(curProgram.tunis[0], textures.unit)
 				if((textures.mipmap&3)==3){
-			 	if(currentUnit!=(currentUnit=textures.unit|0)) gl.activeTexture(GL.TEXTURE0+currentUnit)
-			 	gl.generateMipmap(textures.layers?GL.TEXTURE_2D_ARRAY:GL.TEXTURE_2D)
-		 	}
+			 		if(currentUnit!=(currentUnit=textures.unit|0)) gl.activeTexture(GL.TEXTURE0+currentUnit)
+			 		gl.generateMipmap(textures.layers?GL.TEXTURE_2D_ARRAY:GL.TEXTURE_2D)
+		 		}
 			}else{
 				gl.uniform1i(curProgram.tunis[0], currentUnit)
-				if((textures.mipmap&3)==3) gl.generateMipmap(bindt(textures)); else bindt(textures)
+				bindt(textures,textures.layers?GL.TEXTURE_2D:GL.TEXTURE_2D_ARRAY)
 			}
+			avail = +!textures.unit
 		}
 		if(tt) tt.mipmap|=1
 		if(buf instanceof WebGLVertexArrayObject){
@@ -559,20 +571,20 @@ void main(){
 	for(const ext of ['EXT_color_buffer_float', 'EXT_color_buffer_half_float']) gl.getExtension(ext)
 	fb = bvo = null
 	mainStencil = 0
-	pmask = 285217039
-	ux=0, uy=0, uz=0, uw=0, vx=0, vy=0
+	pmask = 570434063
+	ux=0, uy=0, uz=0, uw=0, vx=0, vy=0, avail=0, vpw = 0, vph = 0, os=0
 	return new Target(null, defaultProgram)
 }
 Object.assign(NS, {
 	R: 1, G: 2, B: 4, A: 8,
 	RGB: 7, RGBA: 15,
-	IF_ONE: 16,
-	IF_ZERO: 32,
+	IF_SET: 16,
+	IF_UNSET: 32,
 	NO_DRAW: 48,
 	UNSET: 64,
 	SET: 128,
 	FLIP: 192,
-	DITHERING: 134217728,
+	DITHERING: 256,
 	ONE: 17, ZERO: 0,
 	RGB_ONE: 1,
 	A_ONE: 16,
@@ -618,7 +630,7 @@ Object.assign(NS, {
 	UPSCALE_PIXELATED: 1, DOWNSCALE_PIXELATED: 2, DOWNSCALE_MIPMAP_NEAREST: 4,
 	PIXELATED: 7, MIPMAPS: 8,
 	REPEAT: 80, REPEAT_MIRRORED: 160, REPEAT_X: 16, REPEAT_MIRRORED_X: 32, REPEAT_Y: 64, REPEAT_MIRRORED_Y: 128,
-	FIXED:0,FLOAT:1,UINT:2,LAYERED:4, gl: null
+	NORM:0,FLOAT:1,UINT:2,LAYERED:4, gl: null
 })
 NS.Blend = (src = 17, combine = 17, dst = 0) => src|dst<<8|combine<<16
 NS.Blend.REPLACE = 1114129
