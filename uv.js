@@ -180,9 +180,9 @@ class M{
 		this.#c+=ta*x; this.#d+=tb*x
 	}
 	multiply(x=1, y=0){
-		const ta=this.#a,tc=this.#c
-		this.#a=ta*x-this.#b*y;this.#b=ta*y+this.#b*x
-		this.#c=tc*x-this.#d*y;this.#d=tc*y+this.#d*x
+		const ta=this.#a,tb=this.#b
+		this.#a=ta*x-this.#c*y;this.#b=tb*x-this.#d*y
+		this.#c=ta*y+this.#c*x;this.#d=tb*y+this.#d*x
 	}
 	getTransform(){ return {a: this.#a, b: this.#b, c: this.#c, d: this.#d, e: this.#e, f: this.#f} }
 	new(a=1,b=0,c=0,d=1,e=0,f=0){return new M(this.arr,a,b,c,d,e,f)}
@@ -397,9 +397,9 @@ class Target{
 		this.#c+=ta*x; this.#d+=tb*x
 	}
 	multiply(x=1, y=0){
-		const ta=this.#a,tc=this.#c
-		this.#a=ta*x-this.#b*y;this.#b=ta*y+this.#b*x
-		this.#c=tc*x-this.#d*y;this.#d=tc*y+this.#d*x
+		const ta=this.#a,tb=this.#b
+		this.#a=ta*x-this.#c*y;this.#b=tb*x-this.#d*y
+		this.#c=ta*y+this.#c*x;this.#d=tb*y+this.#d*x
 	}
 	getTransform(){ return {a: this.#a, b: this.#b, c: this.#c, d: this.#d, e: this.#e, f: this.#f} }
 	new(a=1,b=0,c=0,d=1,e=0,f=0){return new Target(this.fb,defaultProgram,581575183,defaultGeometry,a,b,c,d,e,f)}
