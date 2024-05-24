@@ -303,7 +303,7 @@ let fb = null
 let mainStencil = 0
 let pmask = 0
 let warns = -1
-let vpw = 0, vph = 0, os=0,mainGeo,defaultGeometry
+let vpw = 0, vph = 0, mainGeo, defaultGeometry
 class Target{
 	fb;p;m;k;#a;#b;#c;#d;#e;#f
 	get width(){return (this.fb||gl.canvas).width}
@@ -434,7 +434,8 @@ class Target{
 		if(fb!=this.fb) gl.bindFramebuffer(GL.FRAMEBUFFER, fb = this.fb)
 		const W = (fb||gl.canvas).width, H = (fb||gl.canvas).height
 		if(!W|!H) return; if(vpw!=W||vph!=H) gl.viewport(0,0,vpw=W,vph=H)
-		gl.clear(GL.COLOR_BUFFER_BIT | (q?0:(gl.stencilMask(os=255),GL.STENCIL_BUFFER_BIT)))
+		gl.clear(GL.COLOR_BUFFER_BIT | (q?0:(gl.stencilMask(255), gl.disable(2960), pmask &= -241, GL.STENCIL_BUFFER_BIT)))
+		
 	}
 	clearColor(r = 0, g = 0, b = 0, a = 0){
 		gl.clearColor(r, g, b, a)
@@ -449,8 +450,9 @@ class Target{
 			const W = (fb||gl.canvas).width, H = (fb||gl.canvas).height
 			if(!W|!H) return; if(vpw!=W||vph!=H) gl.viewport(0,0,vpw=W,vph=H)
 			if(fb!=this.fb) gl.bindFramebuffer(GL.FRAMEBUFFER, fb = this.fb)
-			gl.stencilMask(os=255)
+			gl.stencilMask(255)
 			gl.clear(GL.STENCIL_BUFFER_BIT)
+			gl.disable(2960); pmask &= -241
 		}
 	}
 	draw(buf, textures, s=0, t=0, u1=0, u2=0, u3=0, u4=0, size=Infinity){
@@ -466,12 +468,13 @@ class Target{
 			gl.uniform4f(curProgram.uni1, curProgram.a=u1, curProgram.b=u2, curProgram.c=u3, curProgram.d=u4)
 		if(curProgram.e!=s) gl.uniform1ui(curProgram.uni2, curProgram.e=s)
 		if(curProgram.f!=t) gl.uniform1ui(curProgram.uni3, curProgram.f=t)
-		const mask = this.m, stn = fb?fb.stencil:mainStencil, diff = pmask^mask^(stn!=os)<<4
+		const mask = this.m, diff = pmask^mask
 		if(diff&15) gl.colorMask(mask&1,mask&2,mask&4,mask&8)
 		if(diff&240){
 			if(mask&240){
+				const stn = fb?fb.stencil:mainStencil
 				if(!(pmask&240)) gl.enable(GL.STENCIL_TEST)
-				gl.stencilMask(1<<(os=stn))
+				gl.stencilMask(1<<stn)
 				gl.stencilFunc(mask&32?mask&16?GL.NEVER:GL.NOTEQUAL:mask&16?GL.EQUAL:GL.ALWAYS, 255, 1<<stn)
 				const op = mask&128?mask&64?GL.INVERT:GL.REPLACE:mask&64?GL.ZERO:GL.KEEP
 				gl.stencilOp(op, op, op)
@@ -603,7 +606,7 @@ void main(){
 	fb = bvo = null
 	mainStencil = 0
 	pmask = 570434063
-	avail=0, vpw = 0, vph = 0, os=0
+	avail=0, vpw = 0, vph = 0
 	return new Target(null)
 }
 Object.assign(NS, {
