@@ -560,12 +560,11 @@ Thank you for coming to my TED talk.
 		Draws a mesh to the target's output<br>
 		If <c>textures</c> is not specified, the textures from the previous <c>.draw(...)</c> call (chronologically) will be used, <b>as long as the shader is the same as the one that was used with that previous draw call</b> (if it isn't, then you must re-specify <c>textures</c>).<br>
 		If <c>textures</c> is not an array, then <c>textures = [textures]</c>.<br>
-		The default value for <c>drawFlags</c> is <c>R | G | B | A</c> (or short, <c>RGBA</c>).<br>
-		The default value for <c>blend</c> is <c>Blend(ONE, ADD, ONE_MINUS_SRC_ALPHA)</c>.<br>
 		If the provided mesh has more sprites than <c>maxSprites</c>, then only the first <c>maxSprites</c> sprites of the mesh will be drawn
 		<k>.<m>draw</m>(mesh: <t refto="mesh">Mesh</t> | <t refto="meshupload">MeshUpload</t> | <t>Float32Array</t>, textures?: <t refto="texture">Texture</t> | <t>Array</t>&lt;<t refto="texture">Texture</t>>, maxSprites?: <t>int</t>)</k>
 		<hr>
-		Set draw mask options for future draw calls on this target subview<br>
+		Set draw mask options for future draw calls on this target subview (See <b refto="subview">more about subviews</b>)<br>
+		The default value is <c>R | G | B | A</c> (or short, <c>RGBA</c>).<br>
 		<c>R</c>, <c>G</c>, <c>B</c> and <c>A</c> enable drawing to the respective color channels.<br>
 		<c>IF_SET</c> and <c>IF_UNSET</c> limit drawing to only where the stencil buffer is set or unset repectively.<br>
 		<c>NO_DRAW</c> forces the stencil test to always fail, resulting in no colors drawn.<br>
@@ -576,7 +575,8 @@ Thank you for coming to my TED talk.
 		<k><n>get</n>/<n>set</n> .<d>mask</d>: <d>R</d>? | <d>G</d>? | <d>B</d>? | <d>A</d>? | <d>RGB</d>? | <d>RGBA</d>? | <d>IF_SET</d>? | <d>IF_UNSET</d>? | <d>SET</d>? | <d>UNSET</d>? | <d>FLIP</d>? | <d>NO_DRAW</d>? | <d>DITHERING</d>?</k>
 		<hr>
 		Set the blend operation for all future draw calls on this target subview
-		(See <b refto="subview">more about subviews</b>)
+		(See <b refto="subview">more about subviews</b>)<br>
+		The default value is <c>Blend(ONE, ADD, ONE_MINUS_SRC_ALPHA)</c><br>
 		<k><n>get</n>/<n>set</n> .<d>blend</d>: <t refto="blend">Blend</t></k>
 		<hr>
 		Set the shader for all future draw calls on this target subview
@@ -613,7 +613,6 @@ Thank you for coming to my TED talk.
 		Clears the stencil buffer to zero
 		<k>.<m>clearStencil</m>()</k>
 		<hr>		
-		<hr>
 		Delete the target and its resources. Does not delete its texture output (if it had one)
 		<k>.<m>delete</m>()</k>
 		<hr>
@@ -638,7 +637,7 @@ Thank you for coming to my TED talk.
 		Example of default shader but for layered RGBA8 (uint) textures:<br>(this is the default shader)
 		<k><m>Shader</m>(<t style="color:#ea2">`</t><n>void</n> main(){<br>
 			&nbsp;&nbsp;<o>// Texture 0 is a flat texture therefore texture() expects a vec2 coordinate</o><br>
-			&nbsp;&nbsp;<d>color</d> = <m>vec4</m>(<m>texture</m>(<d>tex0</d>, <d>uv</d>.xyz))/<d style="color:#ae2">255.0</d> * (<d style="color:#ae2">1.0</d> - <d>tint</d>);<br>
+			&nbsp;&nbsp;<d>color</d> = <m>vec4</m>(<m>texture</m>(<d>tex0</d>, <d>uv</d>.xy))/<d style="color:#ae2">255.0</d> * (<d style="color:#ae2">1.0</d> - <d>tint</d>);<br>
 		}<t style="color:#ea2">`</t>, [<d>UINT</d> | <d>LAYERED</d>], <d>NORM</d>)</k>
 		<hr>
 		Values exposed in the GLSL shader:

@@ -430,6 +430,8 @@ class Target{
 	set mask(a){this.m=this.m&-512|a&511}
 	clear(r = 0, g = 0, b = 0, a = 0){
 		gl.clearColor(r, g, b, a)
+		const mask = this.m&15
+		if(pmask != (pmask = pmask&-16|mask)) gl.colorMask(mask&1,mask&2,mask&4,mask&8)
 		const q = this.fb?this.fb.stencil=(this.fb.stencil+1)&7:mainStencil=(mainStencil+1)&7
 		if(fb!=this.fb) gl.bindFramebuffer(GL.FRAMEBUFFER, fb = this.fb)
 		const W = (fb||gl.canvas).width, H = (fb||gl.canvas).height
@@ -439,6 +441,8 @@ class Target{
 	}
 	clearColor(r = 0, g = 0, b = 0, a = 0){
 		gl.clearColor(r, g, b, a)
+		const mask = this.m&15
+		if(pmask != (pmask = pmask&-16|mask)) gl.colorMask(mask&1,mask&2,mask&4,mask&8)
 		if(fb!=this.fb) gl.bindFramebuffer(GL.FRAMEBUFFER, fb = this.fb)
 		const W = (fb||gl.canvas).width, H = (fb||gl.canvas).height
 		if(!W|!H) return; if(vpw!=W||vph!=H) gl.viewport(0,0,vpw=W,vph=H)
